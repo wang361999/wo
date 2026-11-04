@@ -8,7 +8,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
-const SITE_URL = (process.env.SITE_URL || 'https://example.com').replace(/\/$/, '');
+// 域名优先级：显式 SITE_URL > Vercel 注入的生产域名 > 本次部署 URL > 占位
+// 避免忘记设环境变量时，sitemap/canonical 全部指向 example.com（流量站致命）
+const SITE_URL = (
+  process.env.SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
+  (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
+  'https://example.com'
+).replace(/\/$/, '');
 const BUILD_SEED = 20261104; // 固定种子：构建出的静态结果可复现
 
 const { tools } = await import(pathToFileURL(path.join(SRC, 'data/tools.mjs')).href);
@@ -37,11 +44,13 @@ fs.writeFileSync(path.join(SRC, 'tools/hanzi-chaxun/_data.mjs'), indexModule);
 // ---------- 2. 准备输出目录，复制静态资源 ----------
 fs.rmSync(DIST, { recursive: true, force: true });
 fs.mkdirSync(DIST, { recursive: true });
-for (const f of fs.readdirSync(path.join(SRC, 'static'))) {
-  fs.copyFileSync(path.join(SRC, 'static', f), path.join(DIST, f));
-}
-for (const f of fs.readdirSync(path.join(ROOT, 'public'))) {
-  fs.copyFileSync(path.join(ROOT, 'public', f), path.join(DIST, f));
+// 关键：Git 不跟踪空目录，Vercel 浅克隆后 public/ 可能根本不存在，必须容错
+for (const dir of [path.join(SRC, 'static'), path.join(ROOT, 'public')]) {
+  if (!fs.existsSync(dir)) continue;
+  for (const f of fs.readdirSync(dir)) {
+    if (f.startsWith('.')) continue; // .gitkeep 等占位文件不进产物
+    fs.copyFileSync(path.join(dir, f), path.join(DIST, f));
+  }
 }
 
 // ---------- 3. 生成工具页（静态结果 + 浏览器端 render 模块） ----------
