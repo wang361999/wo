@@ -1,0 +1,87 @@
+// 单个工具页的壳：静态 HTML 里就有说明与用法（不是空壳），真实交互由 /tool.js 动态挂载工具模块。
+import { TOOLS, CAT_MAP, DEV_NAME, STATUS_NAME } from '../data/catalog.mjs';
+import { svg, esc, SITE_NAME } from './layout.mjs';
+
+const HOWTO = {
+  'grid-cut': '拖一张图进来，选切法（九宫格 / 四格 / 横三连…），调好每格尺寸和留白，点打包下载，按编号顺序发就是完整一张。',
+  'placeholder': '填宽高、底色和文字，右侧实时出图，可导出 SVG / PNG，也能直接复制 data URI 塞进代码。',
+  'color': '在任一格式里输入颜色，其余格式自动同步；下方给配色建议和文字对比度判定。',
+  'image-resize': '选一张图，填目标宽高，可勾选一次导出多个常用尺寸，逐个下载。',
+  'base64': '在左边输入文本，右边实时出 Base64；把 Base64 粘回左边点解码即可还原。',
+  'url-encode': '输入网址或参数，分别看 encodeURIComponent 与 encodeURI 两种结果，可反向解码。',
+  'wordcount': '把文本粘进输入框，中文字数、英文词数、标点、行数与预估阅读时间一起出。',
+  'text-dedup': '粘一列文本，选按行还是按分隔符，点一下出结果；顺带看频次和集合运算。',
+  'case-convert': '输入一个词组或变量名，六种命名风格一次全给，点任一结果即可复制。',
+  'uuid-gen': '选数量和格式，生成一批 UUID v4，可复制或下载成 txt。',
+  'timestamp': '输入秒或毫秒时间戳看对应日期；也可以选一个日期反推时间戳。',
+  'json': '粘一段 JSON，格式化 / 压缩 / 校验即时生效；路径取值填 $.a.b 这种写法。',
+  'morse': '输入文字转摩斯电码，或反过来解码；可以试听节奏。',
+  'roman': '输入 1–3999 的整数转罗马数字，或粘罗马数字还原，非法写法会直接指出。',
+  'html-entities': '输入文本或实体，双向转换，支持命名、十进制、十六进制三种写法。',
+  'list-convert': '粘一列内容，选目标格式（逗号 / SQL IN / JS 数组…），可先去重排序。',
+  'bmi': '填身高体重，出 BMI 与区间判定，并给出体脂率与基础代谢的估算值。',
+  'percent-calc': '选算式，填两个已知数，六种常见百分比问题一次算清。',
+  'temp-convert': '输入任一温标，另外两种同时给出，下面附常见温度对照。',
+  'password': '选长度和字符种类，生成随机密码；可排除 0/O、1/l 这类易混淆字符。',
+  'draw': '一行一个名字或选项，点开始抽签，可一次抽多个、不重复，结果留在历史里。',
+  'compound': '填本金、年化、年数，可选每月定投和通胀折算，看终值与曲线。',
+  'numcn': '输入金额，转人民币大写，可切简体 / 繁体，附加整数与小数处理说明。',
+  'vat-split': '填含税价或不含税价，选税率，税额与另一方向自动算出，闭合到分。',
+  'css-gradient': '选线性 / 径向 / 锥形，拖色标、调角度，右侧实时预览，一键复制 CSS。',
+  'css-shadow': '叠加多层阴影，调偏移、模糊、扩散与颜色，预览框即时更新，一键复制 CSS。',
+  'css-radius': '四个角独立调 x / y 半径，可切对称模式和单位，一键复制 CSS。',
+  'reaction-test': '点开始，等背景变绿再点，五轮取平均，抢跑会重来。',
+  'ports': '按端口、服务名或用途搜，点行可复制端口号；标红的是公网暴露风险高的服务。',
+  'copybook': '输入几个生字，选田字格 / 米字格和格子大小，生成 A4 字帖直接打印。',
+};
+
+export function toolHTML(t, siteUrl) {
+  const cat = CAT_MAP[t.cat] || { name: '其它', icon: '🔧' };
+  const related = TOOLS.filter((x) => x.cat === t.cat && x.id !== t.id)
+    .sort((a, b) => (a.status === 'ready' ? -1 : 1) - (b.status === 'ready' ? -1 : 1))
+    .slice(0, 3);
+  const how = HOWTO[t.id] || `把内容放进来，调几个参数，结果会实时更新，然后复制或下载。`;
+
+  return `
+<nav class="crumb"><a href="/">工具箱</a><span class="sep">/</span>
+  <a href="/#cat-${t.cat}">${esc(cat.name)}</a><span class="sep">/</span><span>${esc(t.name)}</span></nav>
+
+<div class="tool-head">
+  <h1><span class="h-emoji">${esc(t.icon)}</span>${esc(t.name)}
+    <span class="pill">${svg('i-shield')}本地处理 · 不上传</span>
+    <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span></h1>
+  <p>${esc(t.desc)}</p>
+</div>
+
+<div class="shell-note">${svg('i-info')}
+  <p><b>这个页面只做一件事。</b>所有计算与渲染都在你的浏览器里完成，图片和文本不会离开设备；关掉页面数据就没了，不需要登录，也没有上传接口。</p>
+</div>
+
+<div id="tool-root" class="tool-root" data-tool="${t.id}">
+  <div class="tool-loading">正在载入工具…</div>
+</div>
+
+<section class="tool-prose">
+  <h2>怎么用</h2>
+  <ol>
+    <li><b>放内容进来</b>：选文件、粘贴，或直接在上方的输入框里填写。</li>
+    <li><b>调几个参数</b>：按需要选一下，结果实时更新，不用点「生成」。</li>
+    <li><b>拿走结果</b>：复制、下载或打印，然后关掉页面就行。</li>
+  </ol>
+  <p class="howto">${esc(how)}</p>
+  <p class="fineprint">${esc(t.tags.join(' · '))}　|　分类：${esc(cat.name)}　|　适用：${DEV_NAME[t.dev]}端　|　纯前端实现，无第三方脚本、无网络请求。</p>
+</section>
+
+<section class="related"><h2>同类工具</h2>
+  <div class="related-grid">${related.map((r) => r.status === 'ready'
+    ? `<a class="mini" href="/tools/${r.id}/"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(r.desc)}</p></a>`
+    : `<div class="mini is-pending"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(r.desc)}　<small>第 ${r.tier} 批</small></p></div>`
+  ).join('')}</div>
+</section>
+
+<script type="application/ld+json">${JSON.stringify({
+    '@context': 'https://schema.org', '@type': 'WebApplication', name: t.name,
+    description: t.desc, url: `${siteUrl}/tools/${t.id}/`, applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any (Web Browser)', offers: { '@type': 'Offer', price: '0', priceCurrency: 'CNY' },
+  })}</script>`;
+}
