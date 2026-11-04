@@ -96,4 +96,4 @@ fs.writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitema
 
 console.log(`\n构建完成：${urls.length} 个页面 → dist/`);
 console.log(`  工具页 ${tools.length} 个，汉字单字页 ${hanziItems.length} 个，首页 1 个`);
-console.log(`  SITE_URL = ${SITE_URL}${process.env.SITE_URL ? '' : '（占位，部署时请在 Vercel 设置 SITE_URL 环境变量）'}`);
+console.log(`  SITE_URL = ${SITE_URL}${SITE_URL === 'https://example.com' ? '（占位，请在 Vercel 设置 SITE_URL 为你的域名）' : ''}`);
