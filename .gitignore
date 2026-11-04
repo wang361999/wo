@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.vercel
+# 由 build.mjs 从 data/hanzi.mjs 自动生成
+src/tools/hanzi-chaxun/_data.mjs
