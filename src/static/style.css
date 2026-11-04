@@ -403,3 +403,23 @@ body.force-pc .gc-tool .cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .t-panel{border:0;padding:0}
   .card,.t-out,.t-preview{border:0}
 }
+
+
+/* ===== 全量接入新增：速查表容器 / 文件列表 / 游戏舞台 / 实现档位角标 ===== */
+.t-refwrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.t-refwrap .t-table{min-width:480px}
+.t-filelist{display:grid;gap:6px;margin:10px 0}
+.t-filerow{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-s);font-size:13px}
+.t-filerow span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t-filerow span:nth-child(2){color:var(--ink-3);white-space:nowrap;font-size:12px}
+.t-filerow button{border:0;background:transparent;color:var(--ink-3);font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
+.t-gamestage{min-height:170px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;padding:16px;background:var(--paper);border:1px dashed var(--line);border-radius:10px;overflow:hidden;text-align:center}
+.t-gamestage img,.t-gamestage canvas{max-width:100%;height:auto}
+.mode-line{margin-top:8px!important;font-size:12.5px;color:#6b5a3f}
+.badge.m-local{background:var(--ok-soft);color:var(--ok)}
+.badge.m-vendor{background:#f8f0dd;color:#96732f;font-weight:500}
+.badge.m-lite{background:#e9eff3;color:#4a7186;font-weight:500}
+@media (max-width:640px){
+  .t-gamestage{min-height:140px;padding:10px}
+  .t-filerow{font-size:12px;padding:7px 8px}
+}

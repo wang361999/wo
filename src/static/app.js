@@ -1,4 +1,4 @@
-/* 门面交互：卡片由服务端一次性输出，这里只做显示/隐藏、计数联动与布局切换。 */
+/* 门面交互：卡片由服务端一次性输出且全部是链接，这里只做筛选、计数联动与布局切换。 */
 (function () {
   const cards = Array.from(document.querySelectorAll('#grid .card'));
   const grid = document.getElementById('grid');
@@ -8,7 +8,6 @@
   const label = document.getElementById('resultLabel');
   const devCap = document.getElementById('devCap');
   const caps = document.querySelectorAll('.dev-cap');
-  const dlg = document.getElementById('pendingDlg');
 
   let activeDev = 'all';
   let activeCat = 'all';
@@ -78,17 +77,6 @@
   }
 
   document.getElementById('main').addEventListener('click', (e) => {
-    const card = e.target.closest('.card');
-    if (card && card.dataset.status !== 'ready') {
-      e.preventDefault();
-      document.getElementById('dlgTitle').textContent = card.querySelector('.card-name').textContent;
-      document.getElementById('dlgDesc').textContent = card.querySelector('.card-desc').textContent;
-      const meta = card.querySelector('.dev-mark').textContent + ' · ' + card.querySelector('.badge').textContent;
-      document.getElementById('dlgMeta').innerHTML =
-        `<span>${esc(meta)}</span><span>第 ${card.dataset.tier} 批</span><span>分类：${esc(catName(card.dataset.c))}</span>`;
-      if (dlg && typeof dlg.showModal === 'function') dlg.showModal();
-      return;
-    }
     const dev = e.target.closest('.dev-seg [data-dev]');
     if (dev) { activeDev = dev.dataset.dev; apply(); return; }
     const cat = e.target.closest('.side-link[data-cat], .m-chip[data-cat]');
@@ -99,13 +87,8 @@
   q && q.addEventListener('input', () => { keyword = q.value; apply(); });
   qClear && qClear.addEventListener('click', () => { keyword = ''; q.value = ''; apply(); q.focus(); });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && keyword && !(dlg && dlg.open)) { keyword = ''; q.value = ''; apply(); }
+    if (e.key === 'Escape' && keyword) { keyword = ''; q.value = ''; apply(); }
   });
-  const dlgClose = document.getElementById('dlgClose');
-  const dlgOk = document.getElementById('dlgOk');
-  dlgClose && dlgClose.addEventListener('click', () => dlg.close());
-  dlgOk && dlgOk.addEventListener('click', () => dlg.close());
-  dlg && dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 
   /* ---- 布局预览切换（电脑 / 手机 / 自动），两端共用 ---- */
   const seg = document.getElementById('prevSeg');

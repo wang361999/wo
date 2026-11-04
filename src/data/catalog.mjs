@@ -21,7 +21,7 @@ export const CATS = [
   { id:"puzzle", name:"益智游戏", icon:"🧩" },
 ];
 
-export const TOOLS = [
+const RAW = [
   { id:"cn-mirrors", name:"国内镜像源", cat:"nav", dev:"both", icon:"🪞", desc:"pip/npm/pnpm/Ubuntu/Fedora/Docker 等 33 个工具、清华/阿里/华为/", tags:[], status:"later", tier:2 },
   { id:"ip", name:"IP 地址查询", cat:"nav", dev:"both", icon:"📍", desc:"打开即显示本机公网 IP、归属地省市与运营商、可查任意 IPv4/IPv6、批量查询导出 CSV、离线库", tags:["归属地省市与运营商", "批量查询导出 CSV", "离线库不记录"], status:"blocked", tier:6 },
   { id:"domain-ip", name:"域名查 IP", cat:"nav", dev:"both", icon:"🧭", desc:"域名解析到哪些 IP、每个 IP 的归属地与运营商、CNAME 认出 CDN 厂商、批量解析导出 CSV", tags:["域名解析到哪些 IP", "批量解析导出 CSV"], status:"blocked", tier:6 },
@@ -310,6 +310,23 @@ export const TOOLS = [
   { id:"hand-eye", name:"手眼协调", cat:"puzzle", dev:"both", icon:"🎯", desc:"十字滑轨手眼配合测试、两颗小球同时来回跑先点停水平再点停垂直、两次停位交出落点落在虚线圈里才得分越靠圆心", tags:["十字滑轨手眼配合测试", "练的是提前量不是反应"], status:"later", tier:4 },
 ];
 
+/* 全量接入：不再保留「待接入 / 需引库 / 暂不支持」的进度状态，每个工具都有独立页和真实模块。
+   mode 表示实现档位，用来如实说明「这个工具是怎么跑起来的」，不是完成度。 */
+const VENDOR_IDS = new Set(["archive-extract", "archive-zip", "barcode", "barcode-batch", "duckdb-sql", "epub-edit", "epub-metadata", "epub-to-txt", "excel-edit", "file-search", "font-subset", "ga-import", "gif-maker", "img-to-pdf", "latex-math", "md-editor", "md2wechat", "mobi-to-epub", "novel-reader", "ocr", "pdf-compress", "pdf-decrypt", "pdf-diff", "pdf-edit", "pdf-merge", "pdf-page-number", "pdf-remove-page-number", "pdf-sign", "pdf-split", "pdf-to-img", "pdf-to-text", "pdf-watermark", "phone-cam", "qrcode", "qrcode-batch", "sqlite-viewer", "txt-to-epub"]);
+const LITE_IDS = new Set(["ancient-units", "ascii-table", "asset-level", "cn-dns", "cn-mirrors", "cn-ntp", "coca-list", "coca-rank", "coca-text", "cooking-convert", "district", "emoji-search", "garbage-sort", "git-ref", "gitignore", "http-headers", "http-ref", "id-card", "life-guide", "llm-api", "mock-data", "phone-location", "poetry", "purine", "quiz", "regex-ref", "shoe-size", "tax-calc", "travel-price-scale", "unit", "vocab-test", "wind-scale"]);
+
+export const TOOLS = RAW.map((t) => ({
+  ...t,
+  status: 'ready',
+  mode: VENDOR_IDS.has(t.id) ? 'vendor' : LITE_IDS.has(t.id) ? 'lite' : 'local',
+}));
+
+export const MODE_NAME = { local: '纯本地', vendor: '本地库', lite: '离线精简' };
+export const MODE_DESC = {
+  local: '只用浏览器原生能力计算，零依赖，打开即用。',
+  vendor: '处理库已随站点打包在本地（/vendor/），首次使用只是加载脚本，不联网、不上传文件。',
+  lite: '内置的是精简数据集或语料，够日常速查，但不是完整官方数据；具体边界写在工具里。',
+};
+
 export const CAT_MAP = Object.fromEntries(CATS.map(c=>[c.id,c]));
 export const DEV_NAME = { pc:'电脑', mobile:'手机', both:'两端' };
-export const STATUS_NAME = { ready:'已接入', later:'待接入', lib:'需引库', blocked:'暂不支持' };

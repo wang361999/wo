@@ -141,11 +141,11 @@ export function formTool(spec) {
       refresh: () => run(),
     };
 
-    function run() {
+    async function run() {
       const v = values();
       ctx.setError('');
       let r = {};
-      try { r = spec.compute ? (spec.compute(v, ctx) || {}) : {}; }
+      try { r = spec.compute ? (await spec.compute(v, ctx)) || {} : {}; }
       catch (e) { ctx.setError('计算出错：' + e.message); return; }
       if (r.error) { ctx.setError(r.error); return; }
       ctx.setStats(r.stats || []);
@@ -190,4 +190,13 @@ export function formTool(spec) {
 }
 
 /* 自定义工具：直接拿到容器自己画（canvas / 游戏 / 复杂交互用） */
-export function customTool(render) { return (root) => render(root, { esc, $, $$, toast, copy, download, canvasDownload, setAction }); }
+export function customTool(render) {
+  return async (root) => {
+    await render(root, { esc, $, $$, toast, copy, download, canvasDownload, setAction });
+    // 没有自定义吸底条的交互工具，补一个通用入口，保证手机端也能操作
+    if (!document.querySelector('.m-actionbar')) {
+      const btn = root.querySelector('.t-btn.primary, [data-gaction], [data-run], .t-btn');
+      if (btn) setAction(btn.textContent.trim() || '开始', () => btn.click());
+    }
+  };
+}

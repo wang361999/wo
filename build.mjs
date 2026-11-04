@@ -1,5 +1,5 @@
-// 工具箱构建：读注册表 → 生成门面 + 每个「已接入」工具的独立页 + 静态资源 + sitemap。
-// 关键约定：只为已实现工具生成独立 URL，不批量铺没有功能的空壳页。
+// 工具箱构建：读注册表 → 生成门面 + 全部 286 个工具的独立页 + 静态资源 + sitemap。
+// 关键约定：每个工具都必须有真实模块，缺一个就构建失败，绝不铺没有功能的空壳页。
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,9 +25,12 @@ function copyDir(from, to, filter = () => true) {
   fs.mkdirSync(to, { recursive: true });
   let n = 0;
   for (const f of fs.readdirSync(from)) {
-    if (f.startsWith('.') || !filter(f)) continue;
+    if (f.startsWith('.')) continue;
     const src = path.join(from, f);
-    if (!fs.statSync(src).isFile()) continue;
+    const st = fs.statSync(src);
+    // 处理库在 public/vendor/ 子目录里（含 wasm / worker），必须递归复制
+    if (st.isDirectory()) { n += copyDir(src, path.join(to, f), filter); continue; }
+    if (!filter(f)) continue;
     fs.copyFileSync(src, path.join(to, f)); n++;
   }
   return n;
@@ -45,9 +48,9 @@ fs.writeFileSync(path.join(DIST, 'index.html'), layout({
   body: homeHTML(), canonical: SITE_URL + '/', siteUrl: SITE_URL,
 }));
 
-// 已接入工具：一个工具一个独立页
-const ready = TOOLS.filter((t) => t.status === 'ready');
-for (const t of ready) {
+// 全量接入：一个工具一个独立页
+const all = TOOLS;
+for (const t of all) {
   const dir = path.join(DIST, 'tools', t.id);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'index.html'), layout({
@@ -61,21 +64,21 @@ for (const t of ready) {
 const today = new Date().toISOString().slice(0, 10);
 const urls = [
   `  <url><loc>${SITE_URL}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
-  ...ready.map((t) => `  <url><loc>${SITE_URL}/tools/${t.id}/</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
+  ...all.map((t) => `  <url><loc>${SITE_URL}/tools/${t.id}/</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
 ];
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
 fs.writeFileSync(path.join(DIST, 'robots.txt'),
   `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
-// 防线：注册表里标成 ready 的工具必须有对应模块
-const missing = ready.filter((t) => !fs.existsSync(path.join(DIST, 't', `${t.id}.js`)));
+// 防线：注册表里任意一个工具缺模块，直接构建失败
+const missing = all.filter((t) => !fs.existsSync(path.join(DIST, 't', `${t.id}.js`)));
 if (missing.length) {
-  console.error('✗ 以下工具标记为已接入但缺少模块:', missing.map((t) => t.id).join(', '));
+  console.error('✗ 以下工具缺少模块:', missing.map((t) => t.id).join(', '));
   process.exit(1);
 }
 
 console.log(`\n构建完成 → dist/`);
-console.log(`  注册表工具: ${TOOLS.length} 个 · 已接入 ${ready.length} 个 · 独立页 ${ready.length + 1} 个`);
+console.log(`  注册表工具: ${TOOLS.length} 个 · 全量接入 ${all.length} 个 · 独立页 ${all.length + 1} 个`);
 console.log(`  工具模块: ${toolCount} 个 · sitemap: ${urls.length} 条`);
 console.log(`  SITE_URL = ${SITE_URL}${SITE_URL === 'https://example.com' ? '（占位；Vercel 会自动注入生产域名，也可显式设 SITE_URL）' : ''}`);

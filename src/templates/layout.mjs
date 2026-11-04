@@ -23,12 +23,11 @@ const SYMBOLS = `
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 export function layout({ title, desc = '', body, isTool = false, canonical, siteUrl }) {
-  const ready = TOOLS.filter((t) => t.status === 'ready').length;
   const head = isTool
     ? `<a class="brand" href="/">${svg('i-logo', 'logo')}${SITE_NAME}<span class="brand-sub">${SITE_TAGLINE}</span></a>
        <a class="back-link" href="/">${svg('i-left')}返回工具箱</a>`
     : `<a class="brand" href="/">${svg('i-logo', 'logo')}${SITE_NAME}<span class="brand-sub">${SITE_TAGLINE}</span></a>
-       <nav class="top-nav"><a href="/">全部工具</a><span class="count">已接入 ${ready} · 共 ${TOOLS.length} 个</span></nav>`;
+       <nav class="top-nav"><a href="/">全部工具</a><span class="count">${TOOLS.length} 个 · 全部可用</span></nav>`;
 
   const jsonld = isTool ? '' : `
 <script type="application/ld+json">${JSON.stringify({

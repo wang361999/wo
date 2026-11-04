@@ -1,5 +1,5 @@
 // 单个工具页的壳：静态 HTML 里就有说明与用法（不是空壳），真实交互由 /tool.js 动态挂载工具模块。
-import { TOOLS, CAT_MAP, DEV_NAME, STATUS_NAME } from '../data/catalog.mjs';
+import { TOOLS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { svg, esc, SITE_NAME } from './layout.mjs';
 
 const HOWTO = {
@@ -37,10 +37,8 @@ const HOWTO = {
 
 export function toolHTML(t, siteUrl) {
   const cat = CAT_MAP[t.cat] || { name: '其它', icon: '🔧' };
-  const related = TOOLS.filter((x) => x.cat === t.cat && x.id !== t.id)
-    .sort((a, b) => (a.status === 'ready' ? -1 : 1) - (b.status === 'ready' ? -1 : 1))
-    .slice(0, 3);
-  const how = HOWTO[t.id] || `把内容放进来，调几个参数，结果会实时更新，然后复制或下载。`;
+  const related = TOOLS.filter((x) => x.cat === t.cat && x.id !== t.id).slice(0, 3);
+  const how = HOWTO[t.id] || `${t.desc}。在上方填入内容或拖入文件，调整参数后结果会实时更新，最后复制、下载或打印。`;
 
   return `
 <nav class="crumb"><a href="/">工具箱</a><span class="sep">/</span>
@@ -55,6 +53,7 @@ export function toolHTML(t, siteUrl) {
 
 <div class="shell-note">${svg('i-info')}
   <p><b>这个页面只做一件事。</b>所有计算与渲染都在你的浏览器里完成，图片和文本不会离开设备；关掉页面数据就没了，不需要登录，也没有上传接口。</p>
+  <p class="mode-line"><b>实现档位 · ${MODE_NAME[t.mode]}</b>：${MODE_DESC[t.mode]}</p>
 </div>
 
 <div id="tool-root" class="tool-root" data-tool="${t.id}">
@@ -69,13 +68,12 @@ export function toolHTML(t, siteUrl) {
     <li><b>拿走结果</b>：复制、下载或打印，然后关掉页面就行。</li>
   </ol>
   <p class="howto">${esc(how)}</p>
-  <p class="fineprint">${esc(t.tags.join(' · '))}　|　分类：${esc(cat.name)}　|　适用：${DEV_NAME[t.dev]}端　|　纯前端实现，无第三方脚本、无网络请求。</p>
+  <p class="fineprint">${esc(t.tags.join(' · '))}　|　分类：${esc(cat.name)}　|　适用：${DEV_NAME[t.dev]}端　|　${MODE_NAME[t.mode]} · ${esc(MODE_DESC[t.mode])}</p>
 </section>
 
 <section class="related"><h2>同类工具</h2>
-  <div class="related-grid">${related.map((r) => r.status === 'ready'
-    ? `<a class="mini" href="/tools/${r.id}/"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(r.desc)}</p></a>`
-    : `<div class="mini is-pending"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(r.desc)}　<small>第 ${r.tier} 批</small></p></div>`
+  <div class="related-grid">${related.map((r) =>
+    `<a class="mini" href="/tools/${r.id}/"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(r.desc)}</p></a>`
   ).join('')}</div>
 </section>
 
