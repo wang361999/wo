@@ -1,11 +1,11 @@
 {
-  "name": "yiyepaper",
+  "name": "jiuge-cut",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "学生用的可打印工具页 · 静态站",
+  "description": "九宫格切图 · 纯前端单页工具站",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs && node -e \"const http=require('http'),fs=require('fs'),p=require('path');const r=p.join(process.cwd(),'dist');http.createServer((q,s)=>{let f=p.join(r,decodeURIComponent(q.url.split('?')[0]));if(f.endsWith('/'))f=p.join(f,'index.html');if(!f.startsWith(r))f=p.join(r,'index.html');fs.readFile(f,(e,d)=>{if(e){s.writeHead(404);s.end('404');return}const t={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.xml':'application/xml','.txt':'text/plain'}[p.extname(f)]||'application/octet-stream';s.writeHead(200,{'Content-Type':t});s.end(d)})}).listen(4173,()=>console.log('http://localhost:4173'))\""
+    "dev": "node build.mjs && node -e \"const http=require('http'),fs=require('fs'),p=require('path');const r=p.join(process.cwd(),'dist');http.createServer((q,s)=>{let f=p.join(r,decodeURIComponent(q.url.split('?')[0]));if(f.endsWith('/'))f=p.join(f,'index.html');if(!f.startsWith(r))f=p.join(r,'index.html');fs.readFile(f,(e,d)=>{if(e){s.writeHead(404);s.end('404');return}const t={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.xml':'application/xml','.txt':'text/plain','.json':'application/json'}[p.extname(f)]||'application/octet-stream';s.writeHead(200,{'Content-Type':t});s.end(d)})}).listen(4173,()=>console.log('http://localhost:4173'))\""
   }
 }
