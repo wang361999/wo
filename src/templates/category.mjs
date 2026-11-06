@@ -1,5 +1,4 @@
-// 分类落地页：给 10 类长尾词各一个真实 URL，而不是让面包屑一律指回 /#cat-xxx。
-// 页面内容全部静态输出，爬虫不执行 JS 也能读到工具清单与链接。
+// 分类落地页：10 类各一个真实 URL，纯静态输出工具清单与链接，爬虫不执行 JS 也能读全。
 import { CATS, TOOLS, MODE_NAME, DEV_NAME } from '../data/catalog.mjs';
 import { svg, esc } from './layout.mjs';
 import { CAT_SEO, cleanDesc } from './seo.mjs';
@@ -8,40 +7,47 @@ const OTHER_CATS = CATS.filter((c) => c.id !== 'all');
 
 export function categoryHTML(cat, tools) {
   const seo = CAT_SEO[cat.id] || { intro: '一组打开就能用的小工具。', line: '' };
-  const cards = tools.map((t) =>
-    `<a class="mini" href="/tools/${t.id}/">
-       <div class="mt"><span>${esc(t.icon)}</span>${esc(t.name)}</div>
-       <p class="md">${esc(cleanDesc(t.desc))}</p>
-       <p class="mini-meta">${DEV_NAME[t.dev]}端 · ${MODE_NAME[t.mode]}</p>
+  const idx = String(OTHER_CATS.findIndex((c) => c.id === cat.id) + 1).padStart(2, '0');
+  const rows = tools.map((t, i) =>
+    `<a class="idx-row" href="/tools/${t.id}/">
+       <span class="ir-no">${String(i + 1).padStart(3, '0')}</span>
+       <span class="ir-main"><b>${esc(t.icon)} ${esc(t.name)}</b><span>${esc(cleanDesc(t.desc))}</span></span>
+       <span class="ir-meta"><span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span><span class="badge m-${t.mode === 'local' ? 'local' : t.mode === 'vendor' ? 'vendor' : 'lite'}">${MODE_NAME[t.mode]}</span></span>
+       <span class="ir-arw">${svg('i-up')}</span>
      </a>`
   ).join('\n');
 
   const others = OTHER_CATS.filter((c) => c.id !== cat.id).map((c) =>
-    `<a href="/cat/${c.id}/">${esc(c.icon)} ${esc(c.name)}</a>`
+    `<a href="/cat/${c.id}/"><span>${esc(c.icon)}</span>${esc(c.name)}<small>${TOOLS.filter((t) => t.cat === c.id).length}</small></a>`
   ).join('');
 
   return `
-<nav class="crumb"><a href="/">工具箱</a><span class="sep">/</span><span>${esc(cat.name)}</span></nav>
+<nav class="crumb"><a href="/">索引</a><span class="sep">/</span><span>${esc(cat.name)}</span></nav>
 
-<div class="tool-head">
-  <h1><span class="h-emoji">${esc(cat.icon)}</span>${esc(cat.name)}
-    <span class="pill">${svg('i-shield')}本地处理 · 不上传</span></h1>
+<header class="cat-head">
+  <div class="th-kicker"><span>CATEGORY / ${idx}</span><span class="th-rule"></span><span>${tools.length} 个工具 · 独立网址</span></div>
+  <h1><span class="h-emoji" aria-hidden="true">${esc(cat.icon)}</span>${esc(cat.name)}</h1>
   <p>${esc(cat.name)}共 ${tools.length} 个工具，点开就能用，不用注册，也不用把文件传到服务器。</p>
-</div>
+  <div class="cat-metrics">
+    <div class="metric"><b>${String(tools.length).padStart(2, '0')}</b><span>TOOLS / 本类工具</span></div>
+    <div class="metric"><b>0</b><span>UPLOADS / 上传次数</span></div>
+    <div class="metric"><b>100<small>%</small></b><span>CLIENT-SIDE / 本机运行</span></div>
+  </div>
+</header>
 
 <section class="cat-intro">
-  <h2>这一类是做什么的</h2>
+  <div class="sec-head"><span class="sec-no">01</span><h2>这一类是做什么的</h2></div>
   <p>${esc(seo.intro)}</p>
   <p>${esc(seo.line)}这里每个工具都有独立网址，全部计算与渲染都在浏览器里完成，关掉页面数据就没了。</p>
 </section>
 
 <section class="cat-list">
-  <h2>本分类全部 ${tools.length} 个工具</h2>
-  <div class="related-grid">${cards}</div>
+  <div class="sec-head"><span class="sec-no">02</span><h2>全部 ${tools.length} 个工具</h2></div>
+  <div class="idx-list">${rows}</div>
 </section>
 
 <section class="cat-other">
-  <h2>换个分类看看</h2>
+  <div class="sec-head"><span class="sec-no">03</span><h2>换个分类看看</h2></div>
   <nav class="cat-other-links" aria-label="其它分类">${others}</nav>
   <p><a href="/">← 回到全部 ${TOOLS.length} 个工具</a></p>
 </section>

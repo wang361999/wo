@@ -1,11 +1,5 @@
 /* 工具页加载器：按 data-tool 动态加载对应模块，失败时给出明确提示而不是白屏。 */
 (async () => {
-  try {
-    const p = localStorage.getItem('toolbox-preview');
-    if (p === 'pc') document.body.classList.add('force-pc');
-    else if (p === 'mobile') document.body.classList.add('force-mobile');
-  } catch (e) {}
-
   const root = document.getElementById('tool-root');
   const id = root && root.dataset.tool;
   if (!id) return;

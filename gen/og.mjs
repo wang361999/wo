@@ -1,19 +1,21 @@
 // 生成社交分享用的 1200×630 PNG（og:image）。
 // 零依赖：直接用 Node 内置 zlib 手写 PNG，不引图像库、不依赖系统字体。
-// 图案是 26×11 = 286 个圆角小方块，正好对应 286 个工具，配色沿用站点的纸张 + 墨 + 橙棕 + 绿。
+// 图案是 26×11 = 286 个硬边小方块，对应 286 个工具；深色工作台 + 荧光酸绿信号色。
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 
 const W = 1200, H = 630;
-const PAPER = [251, 249, 244];
+const BG = [11, 14, 18];
+const GRID = [27, 33, 40];
+const ACID = [198, 244, 50];
 const PALETTE = [
-  [180, 85, 45],    // 橙棕 accent
-  [61, 122, 78],    // 绿
-  [139, 166, 184],  // 灰蓝
-  [224, 192, 122],  // 麦黄
-  [35, 34, 31],     // 墨
-  [217, 210, 195],  // 浅灰
-  [201, 138, 104],  // 浅橙
+  [198, 244, 50],  // 荧光酸绿
+  [122, 162, 255], // 冰蓝
+  [126, 224, 161], // 薄荷
+  [147, 184, 39],  // 暗绿
+  [235, 242, 246], // 白
+  [43, 50, 60],    // 边线灰
+  [88, 102, 116],  // 中灰
 ];
 
 const RAW = Buffer.alloc(H * (1 + W * 3));
@@ -24,13 +26,6 @@ const set = (x, y, c) => {
 };
 const fill = (x0, y0, x1, y1, c) => {
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) set(x, y, c);
-};
-const roundRect = (x, y, w, h, r, c) => {
-  for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) {
-    const cx = Math.min(dx, w - 1 - dx), cy = Math.min(dy, h - 1 - dy);
-    if (cx < r && cy < r && (r - cx) ** 2 + (r - cy) ** 2 > r * r) continue;
-    set(x + dx, y + dy, c);
-  }
 };
 
 const CRC_TABLE = new Int32Array(256);
@@ -52,25 +47,35 @@ function chunk(type, data) {
 }
 
 export function writeOgPng(dest) {
-  fill(0, 0, W, H, PAPER);
+  fill(0, 0, W, H, BG);
+
+  // 背景细网格，与站点 hero 的网格呼应
+  for (let x = 0; x < W; x += 50) fill(x, 0, x + 1, H, GRID);
+  for (let y = 0; y < H; y += 50) fill(0, y, W, y + 1, GRID);
 
   const cols = 26, rows = 11;
-  const left = 68, top = 92, cw = 41, ch = 41, size = 31, r = 7;
+  const left = 68, top = 92, cw = 41, ch = 41, size = 31;
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
       const dist = Math.abs(i - (cols - 1) / 2) / ((cols - 1) / 2) * 0.6
                  + Math.abs(j - (rows - 1) / 2) / ((rows - 1) / 2) * 0.4;
       const k = (i * 3 + j * 5) % 7;
-      // 中心偏品牌色，越往外越淡
-      const c = dist < 0.34 ? PALETTE[k % 5]
-              : dist < 0.66 ? PALETTE[(k + 1) % 5]
+      // 中心偏信号色，越往外越暗，形成一块「被点亮的索引」
+      const c = dist < 0.28 ? ACID
+              : dist < 0.48 ? PALETTE[k % 5]
+              : dist < 0.72 ? PALETTE[(k + 2) % 5]
               : PALETTE[5];
-      roundRect(left + i * cw + (cw - size) / 2, top + j * ch + (ch - size) / 2, size, size, r, c);
+      fill(left + i * cw + (cw - size) / 2, top + j * ch + (ch - size) / 2,
+           left + i * cw + (cw - size) / 2 + size, top + j * ch + (ch - size) / 2 + size, c);
     }
   }
-  // 底部一道墨色细条，给图案一个落点
-  fill(68, 578, 1132, 583, [35, 34, 31]);
-  roundRect(68, 578, 180, 5, 2, [180, 85, 45]);
+
+  // 上沿与下沿的信号条
+  fill(68, 62, 1132, 66, ACID);
+  fill(68, 578, 1132, 582, GRID);
+  fill(68, 578, 300, 582, ACID);
+  // 四角定位标记
+  for (const [x, y] of [[68, 62], [1116, 62], [68, 566], [1116, 566]]) fill(x, y, x + 16, y + 3, ACID);
 
   for (let y = 0; y < H; y++) RAW[y * (1 + W * 3)] = 0; // filter type 0
 

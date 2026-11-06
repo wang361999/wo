@@ -29,11 +29,13 @@ node build.mjs           # 生成 dist/
 
 ```
 src/data/catalog.mjs      注册表：11 条 CATS（含 all）+ 端分级 + 286 条工具（mode 档位）
-src/templates/layout.mjs  全站布局、信任条、端预览切换
-src/templates/home.mjs    门面（SSR 输出 286 张卡片与两套导航）
-src/templates/tool.mjs    统一工具页壳（静态 HTML 里就有说明与档位标注）
-src/static/style.css      全站样式：纸质感 + 电脑/手机两套布局
-src/static/app.js         门面交互：搜索、两级筛选、计数联动、布局切换
+src/templates/layout.mjs  全站布局、顶部状态条、品牌头与页脚
+src/templates/home.mjs    索引式门面（SSR 输出 286 条索引 + 10 个分类静态链接）
+src/templates/category.mjs 分类落地页（静态工具清单）
+src/templates/tool.mjs    工具页工作台壳（静态说明、FAQ、同类内链）
+src/templates/seo.mjs     全站 title / description / JSON-LD 生成
+src/static/style.css      深色工作台主题 + 单套响应式 + 286 个工具共用组件
+src/static/app.js         门面交互：搜索、两级筛选、计数联动、/ 快捷键
 src/static/tool.js        工具页加载器：按 data-tool 动态 import 模块
 src/static/kit.js         工具运行时：formTool / customTool / 复制下载吸底等 helper
 src/static/engines.js     refTool / fileTool / gamePanel + PDF·音频·二维码等公用件
@@ -44,7 +46,8 @@ gen/spec-*.mjs            11 份工具规格（S['id'] = {...}），按 kind 编
 gen/generate.mjs          规格编译器：ser() 序列化 spec，写 src/tools/*.js
 src/lib/zip.js            原生 JS 手写 ZIP（store + CRC32）
 public/vendor/            本地处理库与 KaTeX 字体
-build.mjs                 读注册表 → 生成 287 个页面 / 资源 / sitemap / robots
+build.mjs                 读注册表 → 生成 297 个页面 / 资源 / sitemap / robots / og.png
+scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链、孤岛页、sitemap 一致性
 ```
 
 ## 两级分类
@@ -52,7 +55,7 @@ build.mjs                 读注册表 → 生成 287 个页面 / 资源 / sitem
 - **第一级**：全部 / 电脑端 / 手机端。工具标 `dev`（`pc` / `mobile` / `both`），切一级时二级计数联动。
 - **第二级**：10 个功能分类（导航资源、PDF 工具、图片、音频/视频、文本与开发、中文语言、生活与杂务、财务与计算、CSS 生成器、益智游戏）。
 
-电脑端与手机端是**两套布局**：电脑端左侧固定分类栏 + 三列卡片、工具页左右并排；手机端顶部分段 + 分类横滑 + 单列卡片、工具页上下堆叠 + 操作按钮吸底。顶部「看电脑端 / 看手机端 / 自动」可强制切换，方便在电脑上验收两套。
+视觉是深色「本地工作台」：**一套自适应布局**，不再分电脑端 / 手机端两套 DOM。首页是巨型标题 + 搜索控制台（搜索 / 设备端 / 分类三行）+ 编号索引网格；窄屏自动收成单列，指标与标签用省略号锁死宽度，不横向溢出。工具页把交互区包进「本机沙箱」工作台，286 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
 
 ## 加一个工具（三步，壳不用改）
 
@@ -60,7 +63,7 @@ build.mjs                 读注册表 → 生成 287 个页面 / 资源 / sitem
 2. 简单工具在任一 `gen/spec-*.mjs` 里写 `S['id'] = {...}`（`kind` 支持 `form` / `custom` / `ref` / `file`），复杂工具直接手写 `src/tools/<id>.js` 导出 `mount(root)`；
 3. `node gen/generate.mjs && node build.mjs`：自动生成 `/tools/<id>/` 独立页并加入 sitemap。
 
-`generate.mjs` 和 `build.mjs` 各有一道防线：**注册表里任意一个工具缺少模块就直接报错退出**，杜绝「卡片能点、页面空白」。
+`generate.mjs` 和 `build.mjs` 各有一道防线：**注册表里任意一个工具缺少模块就直接报错退出**，杜绝「索引能点、页面空白」。
 
 > 生成器只序列化函数体，不会把 spec 文件里的顶层 helper / 常量带进产物。需要跨函数复用的东西都放在 `src/static/engines.js` 并由 `generate.mjs` 的 HEAD 导入；模板字符串里不要引用 spec 顶层常量，否则浏览器里会 `ReferenceError`。
 
