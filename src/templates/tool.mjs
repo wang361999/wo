@@ -1,6 +1,8 @@
 // 单个工具页的壳：静态 HTML 里就有说明与用法（不是空壳），真实交互由 /tool.js 动态挂载工具模块。
+// SEO 相关的 JSON-LD 已移到 <head>（由 build.mjs 经 layout 注入），这里只负责页面正文与内链。
 import { TOOLS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { svg, esc, SITE_NAME } from './layout.mjs';
+import { CAT_SEO, cleanDesc } from './seo.mjs';
 
 const HOWTO = {
   'grid-cut': '拖一张图进来，选切法（九宫格 / 四格 / 横三连…），调好每格尺寸和留白，点打包下载，按编号顺序发就是完整一张。',
@@ -35,20 +37,38 @@ const HOWTO = {
   'copybook': '输入几个生字，选田字格 / 米字格和格子大小，生成 A4 字帖直接打印。',
 };
 
-export function toolHTML(t, siteUrl) {
+/* 同类工具按 id 哈希错开起点环形取 6 个。
+   原来固定取注册顺序前 3 个，导致后面两百多个工具几乎收不到内链，成了孤岛页。 */
+function relatedTools(t, n = 6) {
+  const same = TOOLS.filter((x) => x.cat === t.cat && x.id !== t.id);
+  const pool = same.length ? same : TOOLS.filter((x) => x.id !== t.id);
+  const seed = [...t.id].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const start = seed % pool.length;
+  return Array.from({ length: Math.min(n, pool.length) }, (_, i) => pool[(start + i) % pool.length]);
+}
+
+const DEV_PROSE = {
+  pc: '这个工具按电脑前的用法设计，屏幕大一点、要拖文件慢慢调参数时更顺手。手机上也能打开，只是操作区会窄一些。',
+  mobile: '这个工具按随手用的场景设计，粘进来、点一下、把结果发出去。电脑上打开一样能用。',
+  both: '电脑端和手机端各有一套布局，同一个工具在两边都能直接打开，不用切换账号，也不用重填一遍。',
+};
+
+export function toolHTML(t) {
   const cat = CAT_MAP[t.cat] || { name: '其它', icon: '🔧' };
-  const related = TOOLS.filter((x) => x.cat === t.cat && x.id !== t.id).slice(0, 3);
-  const how = HOWTO[t.id] || `${t.desc}。在上方填入内容或拖入文件，调整参数后结果会实时更新，最后复制、下载或打印。`;
+  const seo = CAT_SEO[t.cat] || { line: '打开就能用，不用注册。' };
+  const feat = cleanDesc(t.desc);
+  const related = relatedTools(t);
+  const how = HOWTO[t.id] || `${feat}。在上方填入内容或拖入文件，调整参数后结果会实时更新，最后复制、下载或打印。`;
 
   return `
 <nav class="crumb"><a href="/">工具箱</a><span class="sep">/</span>
-  <a href="/#cat-${t.cat}">${esc(cat.name)}</a><span class="sep">/</span><span>${esc(t.name)}</span></nav>
+  <a href="/cat/${t.cat}/">${esc(cat.name)}</a><span class="sep">/</span><span>${esc(t.name)}</span></nav>
 
 <div class="tool-head">
   <h1><span class="h-emoji">${esc(t.icon)}</span>${esc(t.name)}
     <span class="pill">${svg('i-shield')}本地处理 · 不上传</span>
     <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span></h1>
-  <p>${esc(t.desc)}</p>
+  <p>${esc(feat)}。${esc(seo.line)}</p>
 </div>
 
 <div class="shell-note">${svg('i-info')}
@@ -68,18 +88,29 @@ export function toolHTML(t, siteUrl) {
     <li><b>拿走结果</b>：复制、下载或打印，然后关掉页面就行。</li>
   </ol>
   <p class="howto">${esc(how)}</p>
-  <p class="fineprint">${esc(t.tags.join(' · '))}　|　分类：${esc(cat.name)}　|　适用：${DEV_NAME[t.dev]}端　|　${MODE_NAME[t.mode]} · ${esc(MODE_DESC[t.mode])}</p>
+
+  <h2>关于${esc(t.name)}</h2>
+  <p>${esc(t.name)}属于${esc(cat.name)}，做的是${esc(feat)}这一类事。${esc(seo.line)}页面是静态生成的，工具模块在打开时才加载，加载完就只跟你的浏览器打交道。</p>
+  <p>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}实现上属于「${MODE_NAME[t.mode]}」：${esc(MODE_DESC[t.mode])}</p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>${esc(t.name)}会把我的文件上传到服务器吗？</dt>
+    <dd>不会。${esc(SITE_NAME)}是纯前端静态站，没有上传接口，也没有存你输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。</dd>
+    <dt>手机上能用${esc(t.name)}吗？</dt>
+    <dd>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}另外这个工具标的是「${DEV_NAME[t.dev]}」。</dd>
+    <dt>要注册、要付费、有次数限制吗？</dt>
+    <dd>都不用。全站 ${TOOLS.length} 个工具免费开放，没有账号系统、不设次数、不弹登录。唯一的成本是你自己浏览器的算力。</dd>
+  </dl>
+
+  <p class="fineprint">${esc(t.tags.join(' · '))}　|　分类：<a href="/cat/${t.cat}/">${esc(cat.name)}</a>　|　适用：${DEV_NAME[t.dev]}端　|　${MODE_NAME[t.mode]} · ${esc(MODE_DESC[t.mode])}</p>
 </section>
 
 <section class="related"><h2>同类工具</h2>
   <div class="related-grid">${related.map((r) =>
-    `<a class="mini" href="/tools/${r.id}/"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(r.desc)}</p></a>`
+    `<a class="mini" href="/tools/${r.id}/"><div class="mt"><span>${esc(r.icon)}</span>${esc(r.name)}</div><p class="md">${esc(cleanDesc(r.desc))}</p></a>`
   ).join('')}</div>
+  <p class="related-more"><a href="/cat/${t.cat}/">查看${esc(cat.name)}全部工具 →</a></p>
 </section>
-
-<script type="application/ld+json">${JSON.stringify({
-    '@context': 'https://schema.org', '@type': 'WebApplication', name: t.name,
-    description: t.desc, url: `${siteUrl}/tools/${t.id}/`, applicationCategory: 'UtilitiesApplication',
-    operatingSystem: 'Any (Web Browser)', offers: { '@type': 'Offer', price: '0', priceCurrency: 'CNY' },
-  })}</script>`;
+`;
 }

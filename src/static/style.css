@@ -423,3 +423,31 @@ body.force-pc .gc-tool .cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .t-gamestage{min-height:140px;padding:10px}
   .t-filerow{font-size:12px;padding:7px 8px}
 }
+
+/* ===== 分类落地页 / 首页分类导航 / 工具页 FAQ ===== */
+.seo-cats{margin-top:40px;padding-top:22px;border-top:1px solid var(--line)}
+.seo-cats h2{font-size:16px}
+.seo-cats>p{font-size:12.5px;color:var(--ink-3);margin:6px 0 16px}
+.seo-cat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.seo-cat{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);padding:11px 13px;transition:border-color .15s,transform .15s}
+.seo-cat:hover{border-color:var(--accent);transform:translateY(-2px)}
+.sc-top{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.sc-emoji{font-size:16px}
+.sc-n{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+.sc-eg{display:block;margin-top:5px;font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-intro,.cat-list,.cat-other{max-width:900px;margin-top:30px}
+.cat-intro h2,.cat-list h2,.cat-other h2{font-size:17px;margin-bottom:10px}
+.cat-intro p,.cat-other p{font-size:13px;color:var(--ink-2);line-height:1.85;margin:0 0 10px}
+.cat-other-links{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
+.cat-other-links a{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:12.5px}
+.cat-other-links a:hover{border-color:var(--accent)}
+.mini-meta{font-size:11px;color:var(--ink-3);margin:6px 0 0}
+.related-more{margin-top:12px;font-size:12.5px}
+.related-more a:hover{color:var(--accent)}
+.tool-prose .faq{margin:0}
+.tool-prose .faq dt{font-size:13px;font-weight:600;color:var(--ink);margin-top:13px}
+.tool-prose .faq dd{margin:5px 0 0;font-size:13px;color:var(--ink-2);line-height:1.8}
+.tool-prose h2:not(:first-child){margin-top:24px}
+@media (max-width:640px){
+  .seo-cat-grid{grid-template-columns:1fr}
+}

@@ -1,6 +1,7 @@
 // 门面：服务端一次性输出全部 286 张卡与两套导航 DOM；客户端 JS 只做筛选与计数。
 import { TOOLS, CATS, DEVS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { svg, esc } from './layout.mjs';
+import { cleanDesc } from './seo.mjs';
 
 const inDev = (t, d) => d === 'all' || t.dev === d || t.dev === 'both';
 const devCount = (d) => TOOLS.filter((t) => inDev(t, d)).length;
@@ -43,7 +44,7 @@ function card(t) {
       </span>
     </div>
     <h3 class="card-name">${esc(t.name)}</h3>
-    <p class="card-desc">${esc(t.desc)}</p>
+    <p class="card-desc">${esc(cleanDesc(t.desc))}</p>
     <div class="card-tags">${t.tags.slice(0, 3).map((x) => `<span class="tag">${esc(x)}</span>`).join('')}</div>`;
   return `<a class="card" href="/tools/${t.id}/" ${attrs}>${inner}</a>`;
 }
@@ -63,6 +64,23 @@ function spec() {
     </div>
     <p class="spec-foot">实现档位：<b>纯本地</b> ${modeCount('local')} 个（只用浏览器原生能力）· <b>本地库</b> ${modeCount('vendor')} 个（处理库已打包在 /vendor/，首次加载脚本，不联网）· <b>离线精简</b> ${modeCount('lite')} 个（内置精简数据集，边界写在工具里）。三档加起来就是 ${TOOLS.length} 个，全部可用。</p>
   </details>`;
+}
+
+/* 分类按钮是 JS 筛选控件，爬虫点不了。这里给 10 个真实分类页一份静态链接，
+   让 /cat/<id>/ 能被发现，也把首页的权重分给分类页。 */
+function catLinks() {
+  const items = CATS.filter((c) => c.id !== 'all').map((c) => {
+    const list = TOOLS.filter((t) => t.cat === c.id);
+    const eg = list.slice(0, 4).map((t) => t.name).join('、');
+    return `<a class="seo-cat" href="/cat/${c.id}/">
+      <span class="sc-top"><span class="sc-emoji">${esc(c.icon)}</span><b>${esc(c.name)}</b><span class="sc-n">${list.length} 个</span></span>
+      <span class="sc-eg">${esc(eg)}…</span></a>`;
+  }).join('\n');
+  return `<nav class="seo-cats" aria-label="按分类浏览工具">
+    <h2>按分类找工具</h2>
+    <p>不想一张张翻卡片，可以直接进分类页，每类都把工具和用法列在一起。</p>
+    <div class="seo-cat-grid">${items}</div>
+  </nav>`;
 }
 
 export function homeHTML() {
@@ -104,6 +122,7 @@ export function homeHTML() {
       <button type="button" data-reset="1">清空筛选</button>
     </div>
     ${spec()}
+    ${catLinks()}
   </div>
 </div>
 `;

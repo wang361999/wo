@@ -1,9 +1,10 @@
 // 全站布局：纸张质感 + 顶部信任条 + 端预览切换 + header / footer。
 // 电脑端与手机端是两套结构，由 CSS（媒体查询或 body.force-*）切换，内容 DOM 共用一份。
+// <head> 里的 SEO 元信息由调用方算好后传入，避免各页面自己拼一套标签。
 import { TOOLS } from '../data/catalog.mjs';
+import { SITE_NAME, SITE_TAGLINE, esc, jsonLdSafe } from './seo.mjs';
 
-export const SITE_NAME = '一页工具';
-export const SITE_TAGLINE = '打开就能用 · 文件不上传';
+export { SITE_NAME, SITE_TAGLINE, esc };
 
 const SYMBOLS = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -20,20 +21,33 @@ const SYMBOLS = `
   <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
 </svg>`;
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-
-export function layout({ title, desc = '', body, isTool = false, canonical, siteUrl }) {
+export function layout({ title, desc = '', body, isTool = false, canonical, siteUrl, jsonld, ogType = 'website', script = '/app.js' }) {
   const head = isTool
     ? `<a class="brand" href="/">${svg('i-logo', 'logo')}${SITE_NAME}<span class="brand-sub">${SITE_TAGLINE}</span></a>
        <a class="back-link" href="/">${svg('i-left')}返回工具箱</a>`
     : `<a class="brand" href="/">${svg('i-logo', 'logo')}${SITE_NAME}<span class="brand-sub">${SITE_TAGLINE}</span></a>
        <nav class="top-nav"><a href="/">全部工具</a><span class="count">${TOOLS.length} 个 · 全部可用</span></nav>`;
 
-  const jsonld = isTool ? '' : `
-<script type="application/ld+json">${JSON.stringify({
-    '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME,
-    description: desc, url: siteUrl + '/', inLanguage: 'zh-CN',
-  })}</script>`;
+  const ld = jsonld ? `\n<script type="application/ld+json">${jsonLdSafe(jsonld)}</script>` : '';
+  const og = `
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#fbf9f4">
+<meta name="color-scheme" content="light">
+<meta property="og:site_name" content="${esc(SITE_NAME)}">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="${esc(ogType)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:url" content="${esc(canonical)}">
+<meta property="og:image" content="${esc(siteUrl)}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(SITE_NAME)} · ${esc(SITE_TAGLINE)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${esc(siteUrl)}/og.png">`;
+  const js = isTool ? '<script type="module" src="/tool.js"></script>' : script ? `<script src="${esc(script)}"></script>` : '';
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -42,10 +56,9 @@ export function layout({ title, desc = '', body, isTool = false, canonical, site
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="canonical" href="${esc(canonical)}">
+<link rel="canonical" href="${esc(canonical)}">${og}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style.css">
-${jsonld}
+<link rel="stylesheet" href="/style.css">${ld}
 </head>
 <body>
 ${SYMBOLS}
@@ -66,10 +79,9 @@ ${SYMBOLS}
   <span>${SITE_NAME} · 每个工具只做一件事 · 数据留在你自己设备上</span>
   <span>纯前端 · 零依赖 · 无需登录</span>
 </div></footer>
-${isTool ? '<script type="module" src="/tool.js"></script>' : '<script src="/app.js"></script>'}
+${js}
 </body>
 </html>`;
 }
 
 export const svg = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
-export { esc };

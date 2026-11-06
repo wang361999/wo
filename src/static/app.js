@@ -42,6 +42,8 @@
   }
 
   function apply() {
+    // 分类落地页是纯静态页，也加载这份脚本以复用布局预览切换，但没有卡片网格
+    if (!grid) return;
     const list = visibleCards();
     const show = new Set(list);
     cards.forEach((c) => c.classList.toggle('hidden', !show.has(c)));

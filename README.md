@@ -68,7 +68,7 @@ build.mjs                 读注册表 → 生成 287 个页面 / 资源 / sitem
 
 `vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null`，导入仓库即可，无需手填构建命令。
 
-`SITE_URL` 不设也行：构建会自动从 `VERCEL_PROJECT_PRODUCTION_URL` / `VERCEL_URL` 推断，用于 canonical 与 sitemap。建议显式设成自己的域名，避免落到 `xxx.vercel.app`。
+正式域名写在 `build.mjs` 顶部的 `PRODUCTION_SITE_URL`，当前是 `https://www.gitd.cn`。根域 `gitd.cn` 在 Vercel 上 308 跳到 `www.gitd.cn`，所以全站 canonical、`og:url`、sitemap、robots 与 JSON-LD 统一用 www 这一套，不产生重复 URL。Vercel 构建直接读这个常量，**不需要在 Dashboard 配环境变量**；本地构建默认 `http://localhost:3000`，也可用 `SITE_URL=... node build.mjs` 覆盖。换域名时改常量或设 `SITE_URL`。
 
 `public/` 下放需要直接进产物根目录的自定义文件（目录内有 `.gitkeep` 保证 Git 跟踪；构建会跳过点文件、递归复制子目录）。
 
@@ -87,3 +87,15 @@ build.mjs                 读注册表 → 生成 287 个页面 / 资源 / sitem
 ## 数据来源说明
 
 分类结构、工具名称与 `platform` 标记来自参考站公开目录，属事实性索引；卡片描述为改写后的中性功能摘要，未照搬原文案。所有工具的实现均为本站独立编写（canvas / Web API / 原生 JS / 本地打包的开源库），未使用参考站代码或资源。
+
+## SEO
+
+产物共 297 个静态页：1 首页 + 10 分类页 + 286 工具页。每页有独立 title / description / canonical，带 OG 与 Twitter Card；结构化数据全部在 `<head>`：首页 `WebSite`、分类页 `CollectionPage + ItemList + BreadcrumbList`、工具页 `WebApplication + BreadcrumbList`。
+
+- **描述清洗**：注册表里不少 `desc` 是抓取时截断的残句（结尾半个英文词、孤立数字、多余斜杠）。`src/templates/seo.mjs` 的 `cleanDesc()` 先整理成可读中文，再按 10 个分类 × 3 档实现档位拼差异化描述，`fit()` 按预算整段裁剪，不留下半截词。卡片、分类页、相关工具区复用同一份清洗结果。
+- **分类落地页**：`/cat/<id>/` 是真实静态页，首页底部有静态分类链接区（筛选按钮爬虫点不了），工具页面包屑与「同类工具」的「查看全部」都指回分类页。「同类工具」按 id 哈希环形取 6 个，不再固定取注册顺序前 3 个，避免两百多个工具收不到内链。
+- **工具页静态正文**：除用法外补了「关于这个工具」与 3 条常见问题，内容按工具名、分类、端分级、实现档位变化，缓解 286 页共用一套模板文字的问题。工具模块仍是打开时才动态加载。
+- **sitemap / robots**：`sitemap.xml` 只写 `loc`。旧版 287 条 `lastmod` 全用构建当天，等于每次发版都宣称全站改过，不可靠的 lastmod 会被忽略，索性不写；`changefreq` / `priority` 同样被忽略。`robots.txt` 明确放行 `/t/` 与 `/vendor/`，保证爬虫能取到工具模块完成渲染。
+- **分享图**：`og.png` 由 `gen/og.mjs` 用 Node 内置 `zlib` 手写 PNG 生成，26×11 = 286 个方块对应 286 个工具，不引图像库、不依赖系统字体。
+
+`scripts/seo-check.mjs` 在每次构建末尾体检真实产物：title / description 缺失、重复或过短，canonical 不自洽，缺 OG / JSON-LD，占位域名残留，内部死链，孤岛页，sitemap 与页面集合不一致 —— 任一项不过就构建失败。也可单独跑 `npm run check:seo`。

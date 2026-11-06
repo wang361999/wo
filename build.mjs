@@ -1,21 +1,50 @@
-// 工具箱构建：读注册表 → 生成门面 + 全部 286 个工具的独立页 + 静态资源 + sitemap。
-// 关键约定：每个工具都必须有真实模块，缺一个就构建失败，绝不铺没有功能的空壳页。
+// 工具箱构建：读注册表 → 生成首页 + 10 个分类页 + 286 个工具页 + 静态资源 + sitemap/robots/og。
+// 两道防线：① 注册表里任一工具缺模块，构建失败；② 产物 SEO 体检不过，构建失败。
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TOOLS } from './src/data/catalog.mjs';
+import { TOOLS, CATS } from './src/data/catalog.mjs';
 import { layout, SITE_NAME, SITE_TAGLINE } from './src/templates/layout.mjs';
 import { homeHTML } from './src/templates/home.mjs';
 import { toolHTML } from './src/templates/tool.mjs';
+import { categoryHTML } from './src/templates/category.mjs';
+import {
+  homeMeta, categoryMeta, toolMeta,
+  homeJsonLd, categoryJsonLd, toolJsonLd,
+} from './src/templates/seo.mjs';
+import { writeOgPng } from './gen/og.mjs';
+import { audit } from './scripts/seo-check.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, 'dist');
-const SITE_URL = (
-  process.env.SITE_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
-  (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
-  'https://example.com'
-).replace(/\/$/, '');
+
+/* canonical / sitemap / og:url / JSON-LD 全部只认这一个来源。
+   旧版兜底是 https://example.com，环境变量一漏，287 个页面的 canonical 就全指向了别人的域名。
+   现在改成：本地才允许 localhost，Vercel 上落到占位地址直接构建失败。 */
+// 正式域名钉在这里，Vercel 构建不依赖平台注入的 VERCEL_PROJECT_PRODUCTION_URL。
+// 根域 gitd.cn 在 Vercel 上 308 跳到 www，规范域名始终是 www.gitd.cn。
+// 换域名改这一行，或在 Vercel / 本地设 SITE_URL 覆盖。
+const PRODUCTION_SITE_URL = 'https://www.gitd.cn';
+
+function resolveSiteUrl() {
+  const raw = process.env.SITE_URL
+    || (process.env.VERCEL ? PRODUCTION_SITE_URL : null)
+    || process.env.VERCEL_PROJECT_PRODUCTION_URL
+    || process.env.VERCEL_URL
+    || 'http://localhost:3000';
+  let s = String(raw).trim();
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  s = s.replace(/\/+$/, '');
+  let u;
+  try { u = new URL(s); } catch { throw new Error(`SITE_URL 不是合法网址：${raw}`); }
+  if (u.pathname !== '/' || u.search || u.hash) throw new Error('SITE_URL 只能是域名根，不能带路径、查询或锚点');
+  const url = `${u.protocol}//${u.host}`;
+  if (process.env.VERCEL && /localhost|example\.com/.test(url)) {
+    throw new Error('Vercel 构建拿不到生产域名：请在项目设置里显式配置 SITE_URL（例如 https://你的域名）');
+  }
+  return url;
+}
+const SITE_URL = resolveSiteUrl();
 
 fs.rmSync(DIST, { recursive: true, force: true });
 fs.mkdirSync(DIST, { recursive: true });
@@ -36,49 +65,91 @@ function copyDir(from, to, filter = () => true) {
   return n;
 }
 
+function writePage(relDir, opts) {
+  const dir = path.join(DIST, relDir);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'index.html'), layout({ siteUrl: SITE_URL, ...opts }));
+}
+
 copyDir(path.join(ROOT, 'src/static'), DIST);
 copyDir(path.join(ROOT, 'src/lib'), path.join(DIST, 'lib'));
 const toolCount = copyDir(path.join(ROOT, 'src/tools'), path.join(DIST, 't'), (f) => f.endsWith('.js'));
 copyDir(path.join(ROOT, 'public'), DIST);
 
 // 首页
-fs.writeFileSync(path.join(DIST, 'index.html'), layout({
-  title: `${SITE_NAME} · ${SITE_TAGLINE}`,
-  desc: '免费在线小工具集，打开就能用。图片、文本、计算、CSS、速查表等工具都在浏览器本地运行，文件不上传，无需登录。',
-  body: homeHTML(), canonical: SITE_URL + '/', siteUrl: SITE_URL,
-}));
+const hm = homeMeta(SITE_URL);
+writePage('', {
+  ...hm, body: homeHTML(), jsonld: homeJsonLd(SITE_URL, hm.desc),
+});
 
-// 全量接入：一个工具一个独立页
-const all = TOOLS;
-for (const t of all) {
-  const dir = path.join(DIST, 'tools', t.id);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'index.html'), layout({
-    title: `${t.name} · ${SITE_NAME}`, desc: t.desc,
-    body: toolHTML(t, SITE_URL), isTool: true,
-    canonical: `${SITE_URL}/tools/${t.id}/`, siteUrl: SITE_URL,
-  }));
+// 10 个分类落地页（长尾词 + 内链枢纽）
+const cats = CATS.filter((c) => c.id !== 'all');
+for (const c of cats) {
+  const tools = TOOLS.filter((t) => t.cat === c.id);
+  const cm = categoryMeta(c, tools, SITE_URL);
+  writePage(path.join('cat', c.id), {
+    ...cm, body: categoryHTML(c, tools),
+    jsonld: categoryJsonLd(c, tools, SITE_URL, cm.desc),
+  });
 }
 
-// sitemap 只收录真实页面；robots
-const today = new Date().toISOString().slice(0, 10);
+// 工具页
+for (const t of TOOLS) {
+  const tm = toolMeta(t, SITE_URL);
+  writePage(path.join('tools', t.id), {
+    ...tm, body: toolHTML(t), isTool: true,
+    jsonld: toolJsonLd(t, SITE_URL, tm.desc),
+  });
+}
+
+// 404：不允许索引，别让错误路径进 sitemap
+fs.writeFileSync(path.join(DIST, '404.html'), `<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,follow">
+<title>页面没找到 · ${SITE_NAME}</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css"></head>
+<body><div class="wrap" style="padding:80px 22px;text-align:center">
+<h1>这个页面没找到</h1><p>可能是链接过期了。回首页看看全部 ${TOOLS.length} 个工具。</p>
+<p><a class="mini" style="display:inline-block;margin-top:18px" href="/">← 回到${SITE_NAME}</a></p>
+</div></body></html>`);
+
+// sitemap：只写 loc。旧版 287 条 lastmod 全用构建当天，等于每次发版都宣称全站改过，
+// 这个信号不可靠时会被直接忽略，索性不写。changefreq / priority 搜索引擎同样忽略。
 const urls = [
-  `  <url><loc>${SITE_URL}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
-  ...all.map((t) => `  <url><loc>${SITE_URL}/tools/${t.id}/</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
+  hm.canonical,
+  ...cats.map((c) => `${SITE_URL}/cat/${c.id}/`),
+  ...TOOLS.map((t) => `${SITE_URL}/tools/${t.id}/`),
 ];
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
+  `<?xml version="1.0" encoding="UTF-8"?>\n<!-- 只列真实存在的页面；不带 lastmod，避免全站同日更新的失真信号 -->\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.writeFileSync(path.join(DIST, 'robots.txt'),
-  `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  `User-agent: *\nAllow: /\n# 工具模块与本地处理库必须允许抓取，否则爬虫渲染不出页面\nAllow: /t/\nAllow: /vendor/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
-// 防线：注册表里任意一个工具缺模块，直接构建失败
-const missing = all.filter((t) => !fs.existsSync(path.join(DIST, 't', `${t.id}.js`)));
+writeOgPng(path.join(DIST, 'og.png'));
+
+// 防线 ①：注册表里任意一个工具缺模块，直接构建失败
+const missing = TOOLS.filter((t) => !fs.existsSync(path.join(DIST, 't', `${t.id}.js`)));
 if (missing.length) {
   console.error('✗ 以下工具缺少模块:', missing.map((t) => t.id).join(', '));
   process.exit(1);
 }
 
+// 防线 ②：产物 SEO 体检
+const check = audit(DIST);
+
 console.log(`\n构建完成 → dist/`);
-console.log(`  注册表工具: ${TOOLS.length} 个 · 全量接入 ${all.length} 个 · 独立页 ${all.length + 1} 个`);
-console.log(`  工具模块: ${toolCount} 个 · sitemap: ${urls.length} 条`);
-console.log(`  SITE_URL = ${SITE_URL}${SITE_URL === 'https://example.com' ? '（占位；Vercel 会自动注入生产域名，也可显式设 SITE_URL）' : ''}`);
+console.log(`  页面: 1 首页 + ${cats.length} 分类 + ${TOOLS.length} 工具 = ${1 + cats.length + TOOLS.length} 页 · 工具模块 ${toolCount} 个 · sitemap ${urls.length} 条`);
+console.log(`  SITE_URL = ${SITE_URL}`);
+if (/\.vercel\.app$/.test(SITE_URL) && !process.env.SITE_URL) {
+  console.warn('  ⚠ 当前 canonical 落在 *.vercel.app。若已绑定自定义域名，务必在项目设置里显式配置 SITE_URL。');
+}
+for (const w of check.warns.slice(0, 5)) console.warn(`  ⚠ ${w}`);
+if (!check.ok) {
+  for (const e of check.errors.slice(0, 20)) console.error(`  ✗ ${e}`);
+  if (check.errors.length > 20) console.error(`  … 另有 ${check.errors.length - 20} 条`);
+  console.error(`\n✗ SEO 体检未通过（${check.errors.length} 项），构建判定为失败\n`);
+  process.exit(1);
+}
+console.log(`  SEO 体检 ✓ ${check.stats.pages} 页 · 唯一 title ${check.stats.uniqueTitles} · 唯一 description ${check.stats.uniqueDescriptions} · 内链 ${check.stats.internalLinks} · 孤岛页 ${check.stats.orphanTools}\n`);

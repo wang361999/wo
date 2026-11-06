@@ -5,7 +5,8 @@
   "type": "module",
   "description": "一页工具：纯前端、零依赖的在线工具箱静态站",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "check:seo": "node scripts/seo-check.mjs"
   },
   "engines": {
     "node": ">=18"
