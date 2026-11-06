@@ -107,24 +107,23 @@ fs.writeFileSync(path.join(DIST, '404.html'), `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,follow">
-<meta name="theme-color" content="#0b0e12">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <title>页面没找到 · ${SITE_NAME}</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css"></head>
 <body>
-<div class="topbar"><div class="wrap topbar-in"><span class="tb-l"><i class="live"></i>ERROR / 404</span><span class="tb-r">NO ACCOUNT · NO UPLOAD · NO TRACKING</span></div></div>
 <header class="site-head"><div class="wrap head-in">
   <a class="brand" href="/"><span class="brand-mark"><svg><use href="#i-logo"/></svg></span>
-  <span class="brand-txt">${SITE_NAME}<small>ONE PAGE TOOLS</small></span></a>
+  <span class="brand-txt">${SITE_NAME}<small>${SITE_TAGLINE}</small></span></a>
 </div></header>
 <main class="wrap"><section class="hero">
-  <div class="hero-kicker"><span class="hk-idx">INDEX / 404</span><span class="hk-rule"></span><span>NOT FOUND</span></div>
-  <h1>这个页面<span class="hl-dot">.</span><br><em>不在这里</em></h1>
-  <div class="hero-bottom"><p class="hero-lede">链接可能过期了。回索引看看全部 ${TOOLS.length} 个工具，或者直接搜关键词。</p></div>
-</section>
-<p style="padding:28px 0 90px"><a class="foot-top" href="/">← 回到${SITE_NAME}索引</a></p></main>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></symbol></svg>
+  <div class="hero-eyebrow"><span class="eyebrow-dot"></span>404 · 页面不存在</div>
+  <h1>这个页面<br><span>不在这里</span></h1>
+  <p class="hero-lede">链接可能已经失效。回首页看看全部 ${TOOLS.length} 个工具，或者直接用搜索找。</p>
+  <p style="margin-top:26px"><a class="foot-top" href="/">回到首页</a></p>
+</section></main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 10.5h18M10.5 10.5v10.5"/><rect x="6" y="6" width="2.6" height="2.6" rx=".6" fill="currentColor" stroke="none"/></symbol></svg>
 </body></html>`);
 
 // sitemap：只写 loc。旧版 287 条 lastmod 全用构建当天，等于每次发版都宣称全站改过，

@@ -1,4 +1,4 @@
-// 全站骨架：深色「本地工作台」——顶部状态条 / 品牌头 / 单栏主区 / 页脚。
+// 全站骨架：克制的浅色工具目录 —— 单层顶栏 / 内容主区 / 页脚。
 // <head> 的 SEO 元信息由调用方算好传入，模板只负责视觉与静态链接。
 import { TOOLS } from '../data/catalog.mjs';
 import { SITE_NAME, SITE_TAGLINE, esc, jsonLdSafe } from './seo.mjs';
@@ -7,18 +7,20 @@ export { SITE_NAME, SITE_TAGLINE, esc };
 
 const SYMBOLS = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square">
-    <path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="3"/>
+    <path d="M3 10.5h18M10.5 10.5v10.5"/>
+    <rect x="6" y="6" width="2.6" height="2.6" rx=".6" fill="currentColor" stroke="none"/>
   </symbol>
-  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
-  <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M15 5l-7 7 7 7"/></symbol>
-  <symbol id="i-arw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M9 5l7 7-7 7"/></symbol>
-  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M6 18L18 6M8 6h10v10"/></symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter"><path d="M12 2l9 4v6c0 5-3.8 8.8-9 10-5.2-1.2-9-5-9-10V6l9-4z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
-  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
-  <symbol id="i-empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21M8 11h6"/></symbol>
-  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter"><rect x="8" y="8" width="12" height="12"/><path d="M16 8V4H4v12h4"/></symbol>
-  <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.7"/><path d="M15.8 15.8L21 21"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-arw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M8 6h10v10"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.5l8.5 3.7v5.6c0 4.8-3.6 8.4-8.5 9.7-4.9-1.3-8.5-4.9-8.5-9.7V6.2L12 2.5z"/><path d="M8.8 12l2.3 2.3 4.2-4.6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5h.01"/></symbol>
+  <symbol id="i-empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21M8 11h6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
 </svg>`;
 
 export function layout({ title, desc = '', body, isTool = false, canonical, siteUrl, jsonld, ogType = 'website', script = '/app.js' }) {
@@ -28,21 +30,21 @@ export function layout({ title, desc = '', body, isTool = false, canonical, site
          <a href="/cat/dev/">文本与开发</a>
          <a href="/cat/image/">图片</a>
        </nav>
-       <span class="head-stat"><b>LOCAL</b> / 本机运行</span>`
+       <span class="head-stat">本地运行 · 文件不上传</span>`
     : `<nav class="top-nav" aria-label="主导航">
-         <a href="/" class="on">索引</a>
-         <a href="/cat/pdf/">PDF</a>
+         <a href="/" class="on">全部工具</a>
+         <a href="/cat/pdf/">PDF 工具</a>
          <a href="/cat/image/">图片</a>
-         <a href="/cat/dev/">开发</a>
-         <a href="/cat/life/">生活</a>
+         <a href="/cat/dev/">文本与开发</a>
+         <a href="/cat/life/">生活与杂务</a>
        </nav>
-       <span class="head-stat"><b>${TOOLS.length}</b> TOOLS / 0 UPLOAD</span>`;
+       <span class="head-stat">${TOOLS.length} 个工具 · 免费使用</span>`;
 
   const ld = jsonld ? `\n<script type="application/ld+json">${jsonLdSafe(jsonld)}</script>` : '';
   const og = `
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="theme-color" content="#0b0e12">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <meta property="og:site_name" content="${esc(SITE_NAME)}">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="${esc(ogType)}">
@@ -72,22 +74,21 @@ export function layout({ title, desc = '', body, isTool = false, canonical, site
 </head>
 <body>
 ${SYMBOLS}
-<div class="topbar"><div class="wrap topbar-in">
-  <span class="tb-l"><i class="live"></i>ALL SYSTEMS LOCAL<span class="tb-div">/</span>文件不离开这台设备</span>
-  <span class="tb-r">NO ACCOUNT<span class="tb-div">·</span>NO UPLOAD<span class="tb-div">·</span>NO TRACKING</span>
-</div></div>
 <header class="site-head"><div class="wrap head-in">
   <a class="brand" href="/" aria-label="${esc(SITE_NAME)}首页">
     <span class="brand-mark">${svg('i-logo')}</span>
-    <span class="brand-txt">${SITE_NAME}<small>ONE PAGE TOOLS</small></span>
+    <span class="brand-txt">${SITE_NAME}<small>${SITE_TAGLINE}</small></span>
   </a>
   ${head}
 </div></header>
 <main class="wrap" id="main">${body}</main>
 <footer class="site-foot"><div class="wrap foot-in">
-  <span class="foot-brand">${SITE_NAME}<small>${SITE_TAGLINE}</small></span>
-  <span class="foot-meta">${TOOLS.length} 个工具 · 纯前端 · 零依赖 · 打开即用</span>
-  <a href="/" class="foot-top">回到索引 ↑</a>
+  <div class="foot-brand">
+    <span class="brand-mark sm">${svg('i-logo')}</span>
+    <span><b>${SITE_NAME}</b><small>${TOOLS.length} 个免费在线工具 · 全部在浏览器本地运行</small></span>
+  </div>
+  <span class="foot-meta">无需注册 · 无文件上传 · 无使用追踪</span>
+  <a href="/" class="foot-top">回到首页 ${svg('i-up')}</a>
 </div></footer>
 ${js}
 </body>

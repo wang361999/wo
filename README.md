@@ -29,12 +29,12 @@ node build.mjs           # 生成 dist/
 
 ```
 src/data/catalog.mjs      注册表：11 条 CATS（含 all）+ 端分级 + 286 条工具（mode 档位）
-src/templates/layout.mjs  全站布局、顶部状态条、品牌头与页脚
-src/templates/home.mjs    索引式门面（SSR 输出 286 条索引 + 10 个分类静态链接）
+src/templates/layout.mjs  全站布局、品牌头与页脚
+src/templates/home.mjs    门面（SSR 输出 286 张工具卡片 + 10 个分类静态链接）
 src/templates/category.mjs 分类落地页（静态工具清单）
 src/templates/tool.mjs    工具页工作台壳（静态说明、FAQ、同类内链）
 src/templates/seo.mjs     全站 title / description / JSON-LD 生成
-src/static/style.css      深色工作台主题 + 单套响应式 + 286 个工具共用组件
+src/static/style.css      浅色卡片主题 + 单套响应式 + 286 个工具共用组件
 src/static/app.js         门面交互：搜索、两级筛选、计数联动、/ 快捷键
 src/static/tool.js        工具页加载器：按 data-tool 动态 import 模块
 src/static/kit.js         工具运行时：formTool / customTool / 复制下载吸底等 helper
@@ -55,7 +55,7 @@ scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链
 - **第一级**：全部 / 电脑端 / 手机端。工具标 `dev`（`pc` / `mobile` / `both`），切一级时二级计数联动。
 - **第二级**：10 个功能分类（导航资源、PDF 工具、图片、音频/视频、文本与开发、中文语言、生活与杂务、财务与计算、CSS 生成器、益智游戏）。
 
-视觉是深色「本地工作台」：**一套自适应布局**，不再分电脑端 / 手机端两套 DOM。首页是巨型标题 + 搜索控制台（搜索 / 设备端 / 分类三行）+ 编号索引网格；窄屏自动收成单列，指标与标签用省略号锁死宽度，不横向溢出。工具页把交互区包进「本机沙箱」工作台，286 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
+视觉是**克制的浅色工具目录**：白底卡片、中性灰文字层级、单一稳重蓝（`#2f5bd7`）、常规字号，一套自适应响应式布局，不再分电脑端 / 手机端两套 DOM。首页是常规标题 + 大搜索框 + 两级筛选 + 三列工具卡片，窄屏自动收成单列。工具页把交互区包进带浅色标题栏的工作台卡片；286 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
 
 ## 加一个工具（三步，壳不用改）
 

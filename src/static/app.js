@@ -55,10 +55,10 @@
     document.querySelectorAll('[data-cat-n]').forEach((n) => { n.textContent = countCat(n.dataset.catN, activeDev); });
 
     const cap = activeDev === 'all'
-      ? '标「两端」的工具在哪一边都能用。'
+      ? '标「两端」的工具在电脑和手机上都能用。'
       : (activeDev === 'pc'
-        ? '电脑端：尺寸大、要精细调、批量处理。标「两端」的也能用。'
-        : '手机端：粘进来、点一下，做好直接发出去。标「两端」的也能用。');
+        ? '已按电脑端筛选，标「两端」的工具也包含在内。'
+        : '已按手机端筛选，标「两端」的工具也包含在内。');
     caps.forEach((c) => { c.textContent = cap; });
 
     const bits = [];

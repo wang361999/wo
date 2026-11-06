@@ -1,22 +1,17 @@
 // 生成社交分享用的 1200×630 PNG（og:image）。
 // 零依赖：直接用 Node 内置 zlib 手写 PNG，不引图像库、不依赖系统字体。
-// 图案是 26×11 = 286 个硬边小方块，对应 286 个工具；深色工作台 + 荧光酸绿信号色。
+// 图案是 26×11 = 286 个方块，对应 286 个工具；白底 + 单一蓝色系的深浅层次。
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 
 const W = 1200, H = 630;
-const BG = [11, 14, 18];
-const GRID = [27, 33, 40];
-const ACID = [198, 244, 50];
-const PALETTE = [
-  [198, 244, 50],  // 荧光酸绿
-  [122, 162, 255], // 冰蓝
-  [126, 224, 161], // 薄荷
-  [147, 184, 39],  // 暗绿
-  [235, 242, 246], // 白
-  [43, 50, 60],    // 边线灰
-  [88, 102, 116],  // 中灰
-];
+const BG = [255, 255, 255];
+const HAIR = [233, 237, 244];
+const BLUE = [47, 91, 215];
+const BLUE_MID = [96, 133, 226];
+const BLUE_LIGHT = [160, 187, 240];
+const BLUE_PALE = [211, 224, 250];
+const GREY = [234, 238, 245];
 
 const RAW = Buffer.alloc(H * (1 + W * 3));
 const set = (x, y, c) => {
@@ -49,33 +44,28 @@ function chunk(type, data) {
 export function writeOgPng(dest) {
   fill(0, 0, W, H, BG);
 
-  // 背景细网格，与站点 hero 的网格呼应
-  for (let x = 0; x < W; x += 50) fill(x, 0, x + 1, H, GRID);
-  for (let y = 0; y < H; y += 50) fill(0, y, W, y + 1, GRID);
-
   const cols = 26, rows = 11;
   const left = 68, top = 92, cw = 41, ch = 41, size = 31;
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
-      const dist = Math.abs(i - (cols - 1) / 2) / ((cols - 1) / 2) * 0.6
-                 + Math.abs(j - (rows - 1) / 2) / ((rows - 1) / 2) * 0.4;
+      const dist = Math.abs(i - (cols - 1) / 2) / ((cols - 1) / 2) * 0.62
+                 + Math.abs(j - (rows - 1) / 2) / ((rows - 1) / 2) * 0.38;
       const k = (i * 3 + j * 5) % 7;
-      // 中心偏信号色，越往外越暗，形成一块「被点亮的索引」
-      const c = dist < 0.28 ? ACID
-              : dist < 0.48 ? PALETTE[k % 5]
-              : dist < 0.72 ? PALETTE[(k + 2) % 5]
-              : PALETTE[5];
+      // 中心深蓝、越往外越浅，只用同一色系的明度变化，不做杂色
+      const c = dist < 0.30 ? BLUE
+              : dist < 0.48 ? (k < 3 ? BLUE : BLUE_MID)
+              : dist < 0.68 ? (k < 4 ? BLUE_MID : BLUE_LIGHT)
+              : dist < 0.86 ? (k < 4 ? BLUE_LIGHT : BLUE_PALE)
+              : (k < 3 ? BLUE_PALE : GREY);
       fill(left + i * cw + (cw - size) / 2, top + j * ch + (ch - size) / 2,
            left + i * cw + (cw - size) / 2 + size, top + j * ch + (ch - size) / 2 + size, c);
     }
   }
 
-  // 上沿与下沿的信号条
-  fill(68, 62, 1132, 66, ACID);
-  fill(68, 578, 1132, 582, GRID);
-  fill(68, 578, 300, 582, ACID);
-  // 四角定位标记
-  for (const [x, y] of [[68, 62], [1116, 62], [68, 566], [1116, 566]]) fill(x, y, x + 16, y + 3, ACID);
+  // 上沿的短蓝条与下沿的细分隔线，留足白边
+  fill(68, 62, 188, 66, BLUE);
+  fill(68, 578, 1132, 580, HAIR);
+  fill(68, 578, 368, 580, BLUE);
 
   for (let y = 0; y < H; y++) RAW[y * (1 + W * 3)] = 0; // filter type 0
 

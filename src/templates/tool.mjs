@@ -1,5 +1,5 @@
-// 工具页：静态正文 + 本机沙箱工作台。交互模块由 /tool.js 挂进 #tool-root。
-// 所有 SEO 内容（面包屑、正文、FAQ、同类内链、分类链接）保持完整，只换视觉结构。
+// 工具页：静态正文 + 工具工作台。交互模块由 /tool.js 挂进 #tool-root。
+// 所有 SEO 内容（面包屑、正文、FAQ、同类内链、分类链接）保持完整。
 import { TOOLS, CATS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { svg, esc, SITE_NAME } from './layout.mjs';
 import { CAT_SEO, cleanDesc } from './seo.mjs';
@@ -58,43 +58,45 @@ export function toolHTML(t) {
   const feat = cleanDesc(t.desc);
   const related = relatedTools(t);
   const how = HOWTO[t.id] || `${feat}。在上方填入内容或拖入文件，调整参数后结果会实时更新，最后复制、下载或打印。`;
-  const idx = String(TOOLS.findIndex((x) => x.id === t.id) + 1).padStart(3, '0');
   const others = CATS.filter((c) => c.id !== 'all' && c.id !== t.cat).slice(0, 4)
     .map((c) => `<a href="/cat/${c.id}/">${esc(c.name)}</a>`).join('');
 
   return `
-<nav class="crumb"><a href="/">索引</a><span class="sep">/</span>
+<nav class="crumb"><a href="/">首页</a><span class="sep">/</span>
   <a href="/cat/${t.cat}/">${esc(cat.name)}</a><span class="sep">/</span><span>${esc(t.name)}</span></nav>
 
 <header class="tool-head">
-  <div class="th-kicker"><span>TOOL / ${idx}</span><span class="th-rule"></span><span>${esc(cat.name)} · ${DEV_NAME[t.dev]}端</span></div>
+  <div class="th-kicker"><span>${esc(cat.name)}</span><span class="tk-dot">·</span><span>${DEV_NAME[t.dev]}端适用</span><span class="tk-dot">·</span><span>${MODE_NAME[t.mode]}</span></div>
   <h1><span class="h-emoji" aria-hidden="true">${esc(t.icon)}</span>${esc(t.name)}</h1>
   <p>${esc(feat)}。${esc(seo.line)}</p>
   <div class="th-tags">
-    <span class="pill">${svg('i-shield')}本地处理 · 不上传</span>
+    <span class="pill">${svg('i-shield')}本地处理，文件不上传</span>
     <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span>
     <span class="badge m-${t.mode === 'local' ? 'local' : t.mode === 'vendor' ? 'vendor' : 'lite'}">${MODE_NAME[t.mode]}</span>
   </div>
 </header>
 
 <section class="workbench" aria-label="${esc(t.name)} 工具区">
-  <div class="wb-bar"><span class="wb-dots"><i></i><i></i><i></i></span>
-    <span class="wb-title">LOCAL SANDBOX / 本机沙箱 · ${esc(t.id)}</span>
-    <span class="wb-status"><i class="live"></i>READY</span></div>
+  <div class="wb-bar">
+    <span class="wb-title">${svg('i-grid')}工具</span>
+    <span class="wb-status">${svg('i-shield')}在浏览器本地运行</span>
+  </div>
   <div class="wb-body">
     <div class="shell-note">${svg('i-info')}
-      <p><b>这个页面只做一件事。</b>所有计算与渲染都在你的浏览器里完成，图片和文本不会离开设备；关掉页面数据就没了，不需要登录，也没有上传接口。</p>
-      <p class="mode-line"><b>实现档位 · ${MODE_NAME[t.mode]}</b>：${MODE_DESC[t.mode]}</p>
+      <div class="sn-body">
+        <p>所有计算与渲染都在当前浏览器标签页完成，输入内容不会上传，也不会被保存。关闭页面后数据即清除。</p>
+        <p class="mode-line">实现方式：${MODE_NAME[t.mode]} · ${esc(MODE_DESC[t.mode])}</p>
+      </div>
     </div>
     <div id="tool-root" class="tool-root" data-tool="${t.id}">
-      <div class="tool-loading">正在载入工具模块…</div>
+      <div class="tool-loading">正在载入工具…</div>
     </div>
   </div>
 </section>
 
 <div class="below">
   <section class="tool-prose">
-    <div class="sec-head"><span class="sec-no">01</span><h2>怎么用</h2></div>
+    <div class="sec-head"><h2>怎么用</h2></div>
     <ol class="steps">
       <li><b>放内容进来</b><span>选文件、粘贴，或直接在上方的输入框里填写。</span></li>
       <li><b>调几个参数</b><span>按需要选一下，结果实时更新，不用点「生成」。</span></li>
@@ -102,14 +104,14 @@ export function toolHTML(t) {
     </ol>
     <p class="howto">${esc(how)}</p>
 
-    <div class="sec-head"><span class="sec-no">02</span><h2>关于${esc(t.name)}</h2></div>
+    <div class="sec-head"><h2>关于${esc(t.name)}</h2></div>
     <p>${esc(t.name)}属于${esc(cat.name)}，做的是${esc(feat)}这一类事。${esc(seo.line)}页面是静态生成的，工具模块在打开时才加载，加载完就只跟你的浏览器打交道。</p>
     <p>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}实现上属于「${MODE_NAME[t.mode]}」：${esc(MODE_DESC[t.mode])}</p>
 
-    <div class="sec-head"><span class="sec-no">03</span><h2>常见问题</h2></div>
+    <div class="sec-head"><h2>常见问题</h2></div>
     <dl class="faq">
       <dt>${esc(t.name)}会把我的文件上传到服务器吗？</dt>
-      <dd>不会。${esc(SITE_NAME)}是纯前端静态站，没有上传接口，也没有存你输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。</dd>
+      <dd>不会。${esc(SITE_NAME)}是纯前端静态站，没有上传接口，也没有保存用户输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。</dd>
       <dt>手机上能用${esc(t.name)}吗？</dt>
       <dd>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}另外这个工具标的是「${DEV_NAME[t.dev]}」。</dd>
       <dt>要注册、要付费、有次数限制吗？</dt>
@@ -120,7 +122,7 @@ export function toolHTML(t) {
   </section>
 
   <aside class="side-col">
-    <section class="related"><div class="sec-head"><span class="sec-no">↗</span><h2>同类工具</h2></div>
+    <section class="related"><div class="sec-head"><h2>同类工具</h2></div>
       <div class="related-grid">${related.map((r, i) =>
         `<a class="mini" href="/tools/${r.id}/"><span class="mi-no">${String(i + 1).padStart(2, '0')}</span>
            <span class="mi-txt"><b>${esc(r.name)}</b><span class="md">${esc(cleanDesc(r.desc))}</span></span>
