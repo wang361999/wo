@@ -1,14 +1,15 @@
 /* 真实站点统计：匿名、无 Cookie、不采集任何工具输入内容。
-   上报的只有事件类型(visit/use)、工具 id、一个本地随机会话 id 与时间戳；
-   实时在线人数按 45 秒内有心跳的会话数计算，热度榜按工具使用次数排序。
+   浏览器只跟本站同源的 /api/stats 通信，数据库地址与凭据全在服务端，
+   页面不加载任何云 SDK，也不存在跨域限制。
+   上报的只有事件类型(visit/use)、工具 id 与一个本地随机会话 id；
+   实时在线人数按 45 秒内有心跳的会话数计算，热度榜按真实使用次数排序。
    读不到服务时显示「—」和提示，绝不用假数字填充。 */
 (function () {
   'use strict';
 
-  var CFG = window.__CLOUD_CONFIG__ || {};
   var MAP = window.__TOOLS_MAP__ || {};
   var NA = '—';
-  var client = null;
+  var API = '/api/stats';
   var sid = '';
   var rootEl = document.getElementById('tool-root');
   var toolId = rootEl ? (rootEl.getAttribute('data-tool') || '') : '';
@@ -38,10 +39,16 @@
     });
   }
 
-  function unwrap(r) {
-    if (!r) throw new Error('empty response');
-    if (r.success === false || r.error) throw new Error((r.error && r.error.message) || 'request failed');
-    return r.data;
+  function api(method, body) {
+    var opt = { method: method, cache: 'no-store' };
+    if (body) {
+      opt.headers = { 'Content-Type': 'application/json' };
+      opt.body = JSON.stringify(body);
+    }
+    return fetch(API, opt).then(function (r) {
+      if (!r.ok) throw new Error('api ' + r.status);
+      return r.json();
+    });
   }
 
   function sidGet() {
@@ -64,28 +71,20 @@
   }
 
   function emit(kind, tid) {
-    if (!client) return;
     var key = 'op.e.' + kind + '.' + (tid || '');
     if (seen(key)) return;
-    var row = { kind: kind, sid: sid };
-    if (tid) row.tool_id = tid;
-    try {
-      Promise.resolve(client.database.from('events').insert(row)).then(function (r) {
-        if (r && r.success !== false && !r.error) {
-          mark(key);
-          // 本次上报落库后再读一次，首屏就能显示包含这次访问的真实数字
-          setTimeout(refresh, 700);
-        }
-      }).catch(function () {});
-    } catch (e) {}
+    api('POST', { op: 'event', kind: kind, sid: sid, tool_id: tid || '' }).then(function (r) {
+      if (r && r.ok) {
+        mark(key);
+        // 本次上报落库后再读一次，首屏就能显示包含这次访问的真实数字
+        setTimeout(refresh, 600);
+      }
+    }).catch(function () {});
   }
 
   function ping() {
-    if (!client || document.hidden) return;
-    try {
-      Promise.resolve(client.database.from('presence')
-        .upsert({ sid: sid, last_seen: new Date().toISOString() })).catch(function () {});
-    } catch (e) {}
+    if (document.hidden) return;
+    api('POST', { op: 'ping', sid: sid }).catch(function () {});
   }
 
   function applyStats(s) {
@@ -131,19 +130,13 @@
   }
 
   function refresh() {
-    if (!client || document.hidden) return;
-    var needAll = !!document.querySelector('[data-tool-uses]');
-    Promise.all([
-      Promise.resolve(client.database.rpc('site_stats')).then(unwrap),
-      Promise.resolve(client.database.rpc('tool_rank', { n: needAll ? 300 : 10 })).then(unwrap)
-    ]).then(function (res) {
-      var s = res[0];
-      applyStats(Array.isArray(s) ? s[0] : s);
-      renderRank(res[1]);
+    if (document.hidden) return;
+    api('GET').then(function (r) {
+      if (!r || !r.stats) { markUnavailable(); return; }
+      applyStats(r.stats);
+      renderRank(r.rank);
       document.documentElement.setAttribute('data-stats', 'on');
-    }).catch(function () {
-      markUnavailable();
-    });
+    }).catch(function () { markUnavailable(); });
   }
 
   function remember(id) {
@@ -174,21 +167,12 @@
 
   function start() {
     renderRecent();
-    if (!CFG.endpoint || !CFG.publishableKey || !window.WorkBuddyCloud) { markUnavailable(); return; }
-    try {
-      client = window.WorkBuddyCloud.createWorkBuddyCloud({
-        endpoint: CFG.endpoint,
-        oauthRelayBaseUrl: CFG.oauthRelayBaseUrl,
-        publishableKey: CFG.publishableKey
-      });
-    } catch (e) { markUnavailable(); return; }
-
     sid = sidGet();
     emit('visit');
     if (toolId) { emit('use', toolId); remember(toolId); }
     ping();
     refresh();
-    setInterval(ping, 20000);
+    setInterval(ping, 30000);
     setInterval(refresh, 30000);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) { ping(); refresh(); }

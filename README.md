@@ -1,6 +1,6 @@
 # 一页工具
 
-纯前端、零依赖的在线工具箱静态站。所有计算与文件处理都在浏览器里完成，**没有文件上传接口、不用登录、不依赖外部 CDN**。站点另有一套匿名访问计数（只记事件类型与工具编号，不采集输入内容），用于实时在线人数与工具热度榜，详见「真实统计」。
+纯前端、零依赖的在线工具箱静态站。所有计算与文件处理都在浏览器里完成，**没有文件上传接口、不用登录、不依赖外部 CDN**。站点另有一套匿名访问计数（只记事件类型与工具编号，不采集输入内容），经同源 `/api/stats` 落在 Vercel 连接的免费 Redis 里，用于实时在线人数与工具热度榜，详见「真实统计」。
 
 工具清单与分类参考自 [365工具箱](https://www.toolbox365.cn/) 的公开目录：**286 个工具 / 10 个功能分类，已全部接入**。每个工具都有独立网址 `/tools/<id>/`、一个真实模块 `src/tools/<id>.js`，点开就能跑，没有占位卡片、没有空壳页。
 
@@ -37,8 +37,8 @@ src/templates/tool.mjs    工具页工作台壳（静态说明、FAQ、同类内
 src/templates/seo.mjs     全站 title / description / JSON-LD 生成
 src/static/style.css      图标驱动的工具站主题 + 单套响应式 + 286 个工具共用组件
 src/static/app.js         门面交互：搜索、两级筛选、计数联动、/ 快捷键
-src/static/cloud-config.js 云服务公开配置（endpoint / publishableKey，可随前端发布）
-src/static/stats.js       匿名统计：事件上报、在线心跳、实时数据读取、热度榜渲染
+api/stats.js              同源统计接口（Vercel Function）：自动选数据源、读写与校验
+src/static/stats.js       匿名统计：只跟 /api/stats 通信，负责上报、心跳、实时数据与热度榜渲染
 src/static/ui.js          底部导航、分享、回顶
 src/static/tool.js        工具页加载器：按 data-tool 动态 import 模块
 src/static/kit.js         工具运行时：formTool / customTool / 复制下载吸底等 helper
@@ -77,25 +77,26 @@ scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链
 
 ## 真实统计（匿名计数）
 
-页面上的四个数字与热度榜都来自云数据库的服务端聚合，没有写死的假数据：
+页面上的四个数字与热度榜都来自 Vercel 项目连接的免费数据库，没有写死的假数据：
 
 | 页面显示 | 口径 |
 |---|---|
-| 当前在线 | 45 秒内有心跳的匿名会话数（心跳每 20 秒一次，页面隐藏时暂停） |
-| 历史访问人次 | `events` 表中 `kind='visit'` 的总条数 |
-| 独立访客 | `visit` 事件中不同 `sid` 的个数 |
-| 工具使用人数 | `kind='use'` 事件中不同 `sid` 的个数 |
-| 累计使用次数 / 热度榜 | `kind='use'` 按 `tool_id` 计数并降序排列 |
+| 当前在线 | 45 秒内有心跳的匿名会话数（心跳每 30 秒一次，页面隐藏时暂停） |
+| 历史访问人次 | `visit` 事件累计数（`INCR`） |
+| 独立访客 | 访问会话去重（`PFCOUNT`） |
+| 工具使用人数 | 用过任意工具的会话去重（`PFCOUNT`） |
+| 累计使用次数 / 热度榜 | `use` 事件累计数，按工具 `ZINCRBY` 累加、`ZREVRANGE` 降序 |
 
-- 两张表：`events`（访问 / 使用事件，只追加）与 `presence`（在线心跳，按 `sid` 覆盖写，不会无限膨胀）；只读聚合函数 `site_stats()` 与 `tool_rank(n)` 在数据库里算好再返回，前端不拉全表。
-- 同一浏览器会话内，访问和「每个工具的使用」各只计一次（`sessionStorage` 去重）；热度榜按累计次数实时排序，页面每 30 秒刷新一次，切回前台立即刷新。
-- 匿名标识是本机 `localStorage` 里的随机 id，没有账号、没有 Cookie 跟踪。上报字段只有事件类型、工具编号、随机会话 id 与时间戳，**不含任何工具输入内容**。
+- 存储在 **Vercel Marketplace 的 Upstash for Redis 免费层**（资源 `gitd-stats`，区域 `iad1`，每月 50 万条命令）。连接串由 Vercel 以 `KV_REST_API_URL` / `KV_REST_API_TOKEN` 自动注入项目，既不在代码里，也不下发到浏览器。
+- 浏览器只跟同源 `/api/stats` 通信（`api/stats.js`，Vercel Function），不加载任何云 SDK，因此没有跨域与 Origin 校验问题。接口按环境变量自动选数据源：Upstash Redis → Neon/Postgres → 已建好的云服务表（兜底）。
+- 同一浏览器会话内，访问和「每个工具的使用」各只计一次（`sessionStorage` 去重）；页面每 30 秒刷新一次，切回前台立即刷新。
+- 匿名标识是本机 `localStorage` 里的随机 id，没有账号、没有 Cookie 跟踪。上报字段只有事件类型、工具编号、随机会话 id，**不含任何工具输入内容**。
 - 读不到统计服务时显示「—」并给出提示，绝不用假数字填充。
-- 云 SDK 的浏览器构建已固化在 `public/vendor/workbuddy-cloud-sdk.js` 随站发布（不引外部 CDN）；`cloud-config.js` 里只有公开的 endpoint 与 publishableKey，无长期密钥。`build.mjs` 会生成 `tools-map.js`，供热度榜把工具 id 映射成名称与分类色。
+- `build.mjs` 会生成 `tools-map.js`，供热度榜把工具 id 映射成名称与分类色。
 
 ## 部署（Vercel）
 
-`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null`，导入仓库即可，无需手填构建命令。
+`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null`，导入仓库即可，无需手填构建命令。根目录下的 `api/stats.js` 会作为 Vercel Function 一起发布；统计数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填。
 
 正式域名写在 `build.mjs` 顶部的 `PRODUCTION_SITE_URL`，当前是 `https://www.gitd.cn`。根域 `gitd.cn` 在 Vercel 上 308 跳到 `www.gitd.cn`，所以全站 canonical、`og:url`、sitemap、robots 与 JSON-LD 统一用 www 这一套，不产生重复 URL。Vercel 构建直接读这个常量，**不需要在 Dashboard 配环境变量**；本地构建默认 `http://localhost:3000`，也可用 `SITE_URL=... node build.mjs` 覆盖。换域名时改常量或设 `SITE_URL`。
 

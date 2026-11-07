@@ -103,8 +103,6 @@ ${SYMBOLS}
   <button type="button" class="tab" data-tab="search">${svg('i-search')}<span>搜索</span></button>
 </nav>
 
-<script src="/vendor/workbuddy-cloud-sdk.js"></script>
-<script src="/cloud-config.js"></script>
 <script src="/tools-map.js"></script>
 <script src="/stats.js"></script>
 <script src="/ui.js"></script>
