@@ -1,5 +1,6 @@
 // 财务与计算类：全部浏览器本地纯计算，不联网、不上传。
-// 税率 / 五险一金比例 / 延迟退休 / 汇率 / 打新规则等均为内置精简参考口径，已在各工具说明里标注，不冒充官方实时数据。
+// 税率 / 五险一金比例 / 延迟退休 / 打新规则等为内置精简口径，已在各工具说明里标注，不冒充官方实时数据。
+// 汇率换算与货币排行走 /api/fx，用实时牌价，不在这个文件里写死。
 export const S = {};
 
 S['mortgage'] = { kind: 'form', titleIn: '贷款信息', titleOut: '还款测算', wide: false,
@@ -317,35 +318,89 @@ S['severance-calc'] = { kind: 'form', titleIn: '劳动关系', titleOut: '补偿
       preview: `<p class="t-hint">当前选「${L.esc(v.way)}」，对应 ${F(chosen)} 元。</p>` };
   } };
 
+/* 升级：原先是 2024 年写死的 10 个汇率，页面还自称「离线参考值」。现在经同源 /api/fx
+   取公开牌价（约 160 个币种），服务端缓存 6 小时并每天存一次快照，走势图画的是真实累积数据。
+   compute 是 async：工具运行时的 run() 本来就 await 它。缓存挂在 window 上，两个汇率工具共用一份请求。 */
 S['currency'] = { kind: 'form', titleIn: '金额与币种', titleOut: '换算结果',
   fields: [
     { id: 'amount', label: '金额', type: 'number', default: 100 },
-    { id: 'from', label: '从', type: 'select', options: ['CNY 人民币', 'USD 美元', 'EUR 欧元', 'JPY 日元', 'HKD 港币', 'GBP 英镑', 'KRW 韩元', 'THB 泰铢', 'SGD 新元', 'AUD 澳元'] },
-    { id: 'to', label: '到', type: 'select', options: ['CNY 人民币', 'USD 美元', 'EUR 欧元', 'JPY 日元', 'HKD 港币', 'GBP 英镑', 'KRW 韩元', 'THB 泰铢', 'SGD 新元', 'AUD 澳元'] }],
-  primary: '复制换算', hintOut: '离线参考汇率（内置精简表，约 2024 年量级），不是实时牌价，不能用于实际换汇。纯静态站不联网取数，也不记录你查了什么。',
-  compute: (v) => {
+    { id: 'from', label: '从', type: 'select', options: ['CNY 人民币', 'USD 美元', 'EUR 欧元', 'JPY 日元', 'HKD 港币', 'GBP 英镑', 'KRW 韩元', 'THB 泰铢', 'SGD 新元', 'AUD 澳元', 'CAD 加元', 'CHF 瑞士法郎', 'TWD 新台币', 'MYR 林吉特', 'VND 越南盾', 'INR 印度卢比', 'RUB 俄罗斯卢布', 'AED 迪拉姆', 'KWD 第纳尔', 'BRL 雷亚尔'] },
+    { id: 'to', label: '到', type: 'select', options: ['CNY 人民币', 'USD 美元', 'EUR 欧元', 'JPY 日元', 'HKD 港币', 'GBP 英镑', 'KRW 韩元', 'THB 泰铢', 'SGD 新元', 'AUD 澳元', 'CAD 加元', 'CHF 瑞士法郎', 'TWD 新台币', 'MYR 林吉特', 'VND 越南盾', 'INR 印度卢比', 'RUB 俄罗斯卢布', 'AED 迪拉姆', 'KWD 第纳尔', 'BRL 雷亚尔'] }],
+  primary: '复制换算', hintOut: '实时汇率经本站同源接口取回，服务端缓存 6 小时；上游数据为中间价，实际以银行 / 换汇平台牌价为准。上游不可用时会明确提示，不会拿旧数据冒充实时。',
+  compute: async (v) => {
     const F = (n, d = 4) => L.fmt(L.round(n, d), d);
-    const R = { CNY: 1, USD: 7.25, EUR: 7.85, JPY: 0.048, HKD: 0.93, GBP: 9.2, KRW: 0.0053, THB: 0.21, SGD: 5.4, AUD: 4.75 };
+    const c = window.__OP_FX__ || (window.__OP_FX__ = { data: null, at: 0, pending: null });
+    const load = () => {
+      if (c.data && Date.now() - c.at < 300000) return Promise.resolve(c.data);
+      if (c.pending) return c.pending;
+      c.pending = fetch('/api/fx').then((r) => r.json()).then((j) => {
+        if (!j.ok || !j.rates) throw new Error(j.error || '汇率服务暂不可用');
+        c.data = j; c.at = Date.now(); c.pending = null; return j;
+      }).catch((e) => { c.pending = null; throw e; });
+      return c.pending;
+    };
+    let fx;
+    try { fx = await load(); } catch (e) { return { error: '实时汇率读取失败：' + e.message + '，请稍后重试' }; }
+    const R = fx.rates, N = fx.names || {};
     const f = String(v.from).split(' ')[0], t = String(v.to).split(' ')[0];
-    const cny = v.amount * (R[f] || 1), out = cny / (R[t] || 1);
-    const text = [`${F(v.amount, 2)} ${f} → ${F(out)} ${t}`, `参考中间价：1 ${f} = ${F(R[f] / (R[t] || 1), 6)} ${t}`, `折合人民币 ${F(cny, 2)} 元`, '这是内置离线参考值，实际以银行/换汇平台牌价为准'].join('\n');
-    const rows = Object.entries(R).map(([k, x]) => `<tr><td>${k}</td><td>${F(x, 6)}</td><td>${F(cny / x, 2)}</td></tr>`).join('');
-    return { text, copy: text, stats: [{ label: '换算结果', value: F(out) + ' ' + t }, { label: '折人民币', value: F(cny, 2) + ' 元' }],
-      preview: `<p class="t-hint">1 单位外币 ≈ 人民币；第三列是把当前金额换成该币种</p><table class="t-table"><thead><tr><th>币种</th><th>≈ CNY</th><th>可换</th></tr></thead><tbody>${rows}</tbody></table>` };
+    if (!R[f] || !R[t]) return { error: f + ' / ' + t + ' 暂时没有牌价' };
+    const amt = Number(v.amount) || 0;
+    const rate = R[t] / R[f], out = amt * rate, cny = amt * (R.CNY / R[f]);
+    const when = fx.updated ? new Date(fx.updated).toLocaleString('zh-CN', { hour12: false }) : '—';
+    const text = [amt + ' ' + f + ' → ' + F(out) + ' ' + t,
+      '实时中间价：1 ' + f + ' = ' + F(rate, 6) + ' ' + t,
+      '折合人民币 ' + F(cny, 2) + ' 元',
+      '牌价时间 ' + when + (fx.stale ? '（上游暂不可用，为上一次成功结果）' : '') + ' · 来源 ' + (fx.source || '公开数据源'),
+      '约 ' + fx.count + ' 个币种可用；实际换汇以银行牌价为准'].join('\n');
+    const major = ['CNY', 'USD', 'EUR', 'JPY', 'HKD', 'GBP', 'KRW', 'THB', 'SGD', 'AUD', 'CAD', 'CHF'];
+    const rows = major.filter((k) => R[k]).map((k) => '<tr><td style="white-space:nowrap">' + L.esc(k) + ' <span style="color:var(--ink-3)">' + L.esc(N[k] || '') + '</span></td><td style="white-space:nowrap">' + F(R.CNY / R[k], 6) + '</td><td style="white-space:nowrap">' + F(amt * R[k] / R[f], 2) + '</td></tr>').join('');
+    const pts = (fx.series || []).filter((x) => x.CNY).slice(-30);
+    let spark = '<p class="t-hint">每天记一次快照，攒够两天后这里会出现 USD → CNY 的真实走势曲线。</p>';
+    if (pts.length >= 2) {
+      const vals = pts.map((x) => x.CNY), lo = Math.min(...vals), hi = Math.max(...vals);
+      const xy = vals.map((n, i) => [(i / (vals.length - 1)) * 420, 68 - ((n - lo) / (hi - lo || 1)) * 60]);
+      const line = xy.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      spark = '<p class="t-hint" style="margin-top:14px">USD → CNY 每日快照（最近 ' + pts.length + ' 天，' + F(lo, 4) + ' ~ ' + F(hi, 4) + '）</p>' +
+        '<svg viewBox="0 0 420 76" width="100%" height="76" role="img" aria-label="美元兑人民币走势"><polyline points="' + line + '" fill="none" stroke="#2f5bd7" stroke-width="2" stroke-linejoin="round"/><circle cx="' + xy[xy.length - 1][0].toFixed(1) + '" cy="' + xy[xy.length - 1][1].toFixed(1) + '" r="3" fill="#2f5bd7"/></svg>';
+    }
+    return { text, copy: text, stats: [{ label: '换算结果', value: F(out) + ' ' + t }, { label: '折人民币', value: F(cny, 2) + ' 元' }, { label: '牌价时间', value: when.slice(5, 16) }],
+      preview: '<p class="t-hint">1 单位该币种 ≈ 人民币；第三列是把当前金额换成该币种</p>' +
+        '<table class="t-table"><thead><tr><th>币种</th><th>≈ CNY</th><th>可换</th></tr></thead><tbody>' + rows + '</tbody></table>' + spark };
   } };
 
 S['currency-rank'] = { kind: 'form', titleIn: '查看方式', titleOut: '货币价值排行',
-  fields: [{ id: 'way', label: '榜单', type: 'select', options: ['最值钱（1 单位折人民币最高）', '最不值钱（最低）', '全部对照'] }],
-  primary: '复制整表', hintOut: '按「1 单位本币折多少人民币」排序的离线精简榜（约 2024 年量级）。币值高低不等于国力强弱，也不代表实时汇率。',
-  compute: (v) => {
-    const F = (n, d = 4) => L.fmt(L.round(n, d), d);
-    const list = [['KWD 科威特第纳尔', 23.6], ['BHD 巴林第纳尔', 19.2], ['OMR 阿曼里亚尔', 18.8], ['JOD 约旦第纳尔', 10.2], ['GBP 英镑', 9.2], ['GIP 直布罗陀镑', 9.2], ['CHF 瑞士法郎', 8.2], ['USD 美元', 7.25], ['EUR 欧元', 7.85], ['SGD 新元', 5.4], ['AUD 澳元', 4.75], ['CAD 加元', 5.3], ['CNY 人民币', 1], ['HKD 港币', 0.93], ['THB 泰铢', 0.21], ['JPY 日元', 0.048], ['KRW 韩元', 0.0053], ['VND 越南盾', 0.00029], ['IDR 印尼盾', 0.00046], ['IRR 伊朗里亚尔', 0.000017]];
-    let arr = [...list].sort((a, b) => b[1] - a[1]);
-    if (v.way.startsWith('最不值钱')) arr = arr.reverse();
-    else if (v.way.startsWith('全部')) arr = [...list].sort((a, b) => b[1] - a[1]);
-    const tbl = `<table class="t-table"><thead><tr><th>#</th><th>币种</th><th>1 单位 ≈ CNY</th></tr></thead><tbody>${arr.map((x, i) => `<tr><td>${i + 1}</td><td>${L.esc(x[0])}</td><td>${F(x[1], 6)}</td></tr>`).join('')}</tbody></table>`;
-    const text = arr.map((x, i) => `${i + 1}. ${x[0]}　1 单位 ≈ ${F(x[1], 6)} 元`).join('\n');
-    return { text, copy: text, stats: [{ label: '收录币种', value: list.length + ' 种' }, { label: '最强', value: 'KWD' }, { label: '最弱', value: 'IRR' }], preview: tbl };
+  fields: [{ id: 'way', label: '榜单', type: 'select', options: ['最值钱（1 单位折人民币最高）', '最不值钱（最低）', '全部对照（前 60）'] }],
+  primary: '复制整表', hintOut: '按「1 单位本币折多少人民币」用实时牌价排序，共约 160 个币种。币值高低不等于国力强弱；上游不可用时页面会明确标注，不拿旧数据冒充实时。',
+  compute: async (v) => {
+    const F = (n, d = 6) => L.fmt(L.round(n, d), d);
+    const c = window.__OP_FX__ || (window.__OP_FX__ = { data: null, at: 0, pending: null });
+    const load = () => {
+      if (c.data && Date.now() - c.at < 300000) return Promise.resolve(c.data);
+      if (c.pending) return c.pending;
+      c.pending = fetch('/api/fx').then((r) => r.json()).then((j) => {
+        if (!j.ok || !j.rates) throw new Error(j.error || '汇率服务暂不可用');
+        c.data = j; c.at = Date.now(); c.pending = null; return j;
+      }).catch((e) => { c.pending = null; throw e; });
+      return c.pending;
+    };
+    let fx;
+    try { fx = await load(); } catch (e) { return { error: '实时汇率读取失败：' + e.message + '，请稍后重试' }; }
+    const R = fx.rates, N = fx.names || {};
+    if (!R.CNY) return { error: '上游暂时没有人民币牌价' };
+    const all = Object.keys(R).filter((k) => R[k] > 0).map((k) => ({ code: k, name: N[k] || k, cny: R.CNY / R[k] }));
+    all.sort((a, b) => b.cny - a.cny);
+    const strongest = all[0] ? all[0].code : '—', weakest = all.length ? all[all.length - 1].code : '—';
+    let arr = all.slice();
+    if (v.way.startsWith('最不值钱')) arr = all.slice().reverse();
+    arr = arr.slice(0, 60);
+    const when = fx.updated ? new Date(fx.updated).toLocaleString('zh-CN', { hour12: false }) : '—';
+    const note = '<p class="t-hint">' + (fx.stale ? '上游暂不可用，以下是上一次成功的结果。' : '实时牌价，服务端缓存 6 小时。') +
+      '更新时间 ' + L.esc(when) + ' · 来源 ' + L.esc(fx.source || '公开数据源') + ' · 共 ' + all.length + ' 个币种</p>';
+    const tbl = '<table class="t-table"><thead><tr><th>#</th><th>币种</th><th>1 单位 ≈ CNY</th></tr></thead><tbody>' +
+      arr.map((x, i) => '<tr><td>' + (i + 1) + '</td><td>' + L.esc(x.code) + ' ' + L.esc(x.name) + '</td><td>' + F(x.cny) + '</td></tr>').join('') + '</tbody></table>';
+    const text = arr.map((x, i) => (i + 1) + '. ' + x.code + ' ' + x.name + '　1 单位 ≈ ' + F(x.cny) + ' 元').join('\n') + '\n\n' +
+      '牌价时间 ' + when + (fx.stale ? '（非实时）' : '') + '，来源 ' + (fx.source || '公开数据源');
+    return { text, copy: text, stats: [{ label: '收录币种', value: all.length + ' 种' }, { label: '最值钱', value: strongest }, { label: '最不值钱', value: weakest }], preview: tbl + note };
   } };
 
 S['asset-heatmap'] = { kind: 'form', titleIn: '持仓明细', titleOut: '资产结构', wide: true,

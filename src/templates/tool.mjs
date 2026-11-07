@@ -60,6 +60,18 @@ export function toolHTML(t) {
   const feat = cleanDesc(t.desc);
   const related = relatedTools(t);
   const how = HOWTO[t.id] || `${feat}。在上方填入内容或拖入文件，调整参数后结果会实时更新，最后复制、下载或打印。`;
+  // 接了同源服务端接口的工具，页面不能再说「纯前端 / 不联网」，否则就是骗人
+  const isApi = t.mode === 'api';
+  const shellNote = isApi
+    ? '<p>这个工具需要联网取实时数据。查询词（IP、域名或币种）会送到本站同源接口，由服务端向公开数据源取数并短期缓存，结果再回到你的浏览器。</p>' +
+      '<p>服务端不保存查询记录、不写数据库、不关联身份；工具里填写的其它内容仍然只留在本机。上游不可用时会明确提示，不会拿旧数据冒充实时。</p>'
+    : '<p>所有计算与渲染都在当前浏览器标签页完成，输入内容不会上传，也不会被保存。关闭页面后数据即清除。</p>';
+  const faqAnswer = isApi
+    ? '只会把查询词（IP、域名或币种）送到本站同源接口用于取数，不保存查询记录、不写入数据库、不关联你的身份。文件、图片、文本等其它输入一律不上传，也仍然只在当前标签页里处理。'
+    : '不会。本站绝大多数工具是纯前端静态运算，没有上传接口，也没有保存用户输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。站点只做匿名访问计数，不涉及你填写的内容。';
+  const costLine = isApi
+    ? '实时数据来自公开数据源，会有更新延迟，不能当作交易或结算依据。'
+    : '唯一的成本是你自己浏览器的算力。';
   const others = CATS.filter((c) => c.id !== 'all' && c.id !== t.cat).slice(0, 4)
     .map((c) => `<a href="/cat/${c.id}/">${esc(c.name)}</a>`).join('');
 
@@ -74,9 +86,10 @@ export function toolHTML(t) {
     <h1>${esc(t.name)}</h1>
     <p>${esc(feat)}。${esc(seo.line)}</p>
     <div class="th-tags">
-      <span class="pill">${svg('i-shield')}本地处理，文件不上传</span>
+      <span class="pill">${svg('i-shield')}${isApi ? '查询经本站接口' : '本地处理，文件不上传'}</span>
       <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span>
-      <span class="badge m-${t.mode === 'local' ? 'local' : t.mode === 'vendor' ? 'vendor' : 'lite'}">${MODE_NAME[t.mode]}</span>
+      <span class="badge m-${t.mode}">${MODE_NAME[t.mode]}</span>
+      <button type="button" class="fav-btn" data-fav-btn aria-pressed="false">☆ 收藏</button>
     </div>
   </div>
 </header>
@@ -90,12 +103,12 @@ export function toolHTML(t) {
 <section class="workbench" aria-label="${esc(t.name)} 工具区">
   <div class="wb-bar">
     <span class="wb-title">${svg('i-grid')}工具</span>
-    <span class="wb-status">${svg('i-shield')}在浏览器本地运行</span>
+    <span class="wb-status">${svg('i-shield')}${isApi ? '查询经本站同源接口' : '在浏览器本地运行'}</span>
   </div>
   <div class="wb-body">
     <div class="shell-note">${svg('i-info')}
       <div class="sn-body">
-        <p>所有计算与渲染都在当前浏览器标签页完成，输入内容不会上传，也不会被保存。关闭页面后数据即清除。</p>
+        ${shellNote}
         <p class="mode-line">实现方式：${MODE_NAME[t.mode]} · ${esc(MODE_DESC[t.mode])}</p>
       </div>
     </div>
@@ -116,17 +129,17 @@ export function toolHTML(t) {
     <p class="howto">${esc(how)}</p>
 
     <div class="sec-head"><h2>关于${esc(t.name)}</h2></div>
-    <p>${esc(t.name)}属于${esc(cat.name)}，做的是${esc(feat)}这一类事。${esc(seo.line)}页面是静态生成的，工具模块在打开时才加载，加载完就只跟你的浏览器打交道。</p>
+    <p>${esc(t.name)}属于${esc(cat.name)}，做的是${esc(feat)}这一类事。${esc(seo.line)}页面是静态生成的，工具模块在打开时才加载；${isApi ? '需要实时数据的部分经本站同源接口取回，其余交互仍在本机完成。' : '加载完就只跟你的浏览器打交道。'}</p>
     <p>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}实现上属于「${MODE_NAME[t.mode]}」：${esc(MODE_DESC[t.mode])}</p>
 
     <div class="sec-head"><h2>常见问题</h2></div>
     <dl class="faq">
-      <dt>${esc(t.name)}会把我的文件上传到服务器吗？</dt>
-      <dd>不会。${esc(SITE_NAME)}是纯前端静态站，没有上传接口，也没有保存用户输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。站点只做匿名访问计数，不涉及你填写的内容。</dd>
+      <dt>${esc(t.name)}会把我的数据上传到服务器吗？</dt>
+      <dd>${faqAnswer}站点只做匿名访问计数，不涉及你填写的内容。</dd>
       <dt>手机上能用${esc(t.name)}吗？</dt>
       <dd>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}另外这个工具标的是「${DEV_NAME[t.dev]}」。</dd>
       <dt>要注册、要付费、有次数限制吗？</dt>
-      <dd>都不用。全站 ${TOOLS.length} 个工具免费开放，没有账号系统、不设次数、不弹登录。唯一的成本是你自己浏览器的算力。</dd>
+      <dd>都不用。全站 ${TOOLS.length} 个工具免费开放，没有账号系统、不弹登录。${costLine}实时查询类工具受公开数据源限流保护，过快连续查询会被暂时拒绝。</dd>
     </dl>
 
     <p class="fineprint">${esc(t.tags.join(' · '))}　|　分类：<a href="/cat/${t.cat}/">${esc(cat.name)}</a>　|　适用：${DEV_NAME[t.dev]}端　|　${MODE_NAME[t.mode]} · ${esc(MODE_DESC[t.mode])}</p>

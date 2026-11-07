@@ -5,8 +5,11 @@
   "type": "module",
   "description": "一页工具：纯前端、零依赖的在线工具箱静态站",
   "scripts": {
+    "gen": "node gen/generate.mjs",
     "build": "node build.mjs",
-    "check:seo": "node scripts/seo-check.mjs"
+    "check:seo": "node scripts/seo-check.mjs",
+    "check:api": "node scripts/api-selftest.mjs",
+    "check": "node scripts/api-selftest.mjs && node build.mjs"
   },
   "engines": {
     "node": ">=18"

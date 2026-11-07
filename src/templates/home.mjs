@@ -10,7 +10,7 @@ const devCount = (d) => TOOLS.filter((t) => inDev(t, d)).length;
 const catCount = (c, d) => TOOLS.filter((t) => inDev(t, d) && (c === 'all' || t.cat === c)).length;
 const modeCount = (m) => TOOLS.filter((t) => t.mode === m).length;
 
-const MODE_CLASS = { local: 'm-local', vendor: 'm-vendor', lite: 'm-lite' };
+const MODE_CLASS = { local: 'm-local', vendor: 'm-vendor', lite: 'm-lite', api: 'm-api' };
 
 function devSeg() {
   return `<div class="dev-seg" role="group" aria-label="按设备端筛选">${DEVS.map((d) =>
@@ -90,9 +90,11 @@ function spec() {
       <div class="spec-card"><h3>每个工具都有独立网址</h3>
         <p>${TOOLS.length} 个工具各有自己的页面，打开就能用。没有「卡片能点、点进去只有说明」的空壳页；静态站承接不了的能力，会在工具页里写明边界。</p></div>
       <div class="spec-card"><h3>统计只数次数，不碰内容</h3>
-        <p>实时在线、访问量与热度榜是匿名计数，只记录「打开了哪个工具」和一个随机会话标识，不采集你在工具里填的任何文字、图片或文件，也没有账号系统。</p></div>
+        <p>实时在线、访问量与热度榜是匿名计数，只记录「哪个工具被真正用过」和一个随机会话标识，不采集你在工具里填的任何文字、图片或文件，也没有账号系统。服务端对每个会话做去重，刷不出假数据。</p></div>
+      <div class="spec-card"><h3>需要联网的那几个</h3>
+        <p>IP 查询、域名解析、实时汇率这类工具经本站同源接口取数并短期缓存，档位标为「在线数据」。查询词会送到服务端，但不落库、不关联身份；其余 ${TOOLS.length - modeCount('api')} 个工具仍然完全在浏览器本地运行。</p></div>
     </div>
-    <p class="spec-foot">实现方式　纯本地 ${modeCount('local')} 个 · 本地库 ${modeCount('vendor')} 个 · 离线精简 ${modeCount('lite')} 个　|　${MODE_DESC.local}${MODE_DESC.vendor}${MODE_DESC.lite}合计 ${TOOLS.length} 个，全部可用。</p>
+    <p class="spec-foot">实现方式　纯本地 ${modeCount('local')} 个 · 本地库 ${modeCount('vendor')} 个 · 离线精简 ${modeCount('lite')} 个 · 在线数据 ${modeCount('api')} 个　|　${MODE_DESC.local}${MODE_DESC.vendor}${MODE_DESC.lite}${MODE_DESC.api}合计 ${TOOLS.length} 个，全部可用。</p>
   </details>`;
 }
 
@@ -101,7 +103,7 @@ export function homeHTML() {
 <section class="hero">
   <div class="hero-eyebrow"><span class="eyebrow-dot"></span>免费 · 无需注册 · 文件不上传</div>
   <h1>常用小工具，打开就能用</h1>
-  <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分好，全部在浏览器里跑。</p>
+  <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分好，绝大多数在浏览器本地跑，实时数据类经本站接口取数。</p>
   <div class="hero-search">${svg('i-search')}
     <input id="q" type="search" placeholder="搜索工具名称或功能" autocomplete="off" aria-label="搜索工具">
     <kbd class="kbd">/</kbd>
@@ -125,9 +127,26 @@ export function homeHTML() {
   <div class="quick-grid">${quickTiles()}</div>
 </section>
 
-<section class="recent-sec" aria-label="最近使用">
-  <div class="sec-head"><h2>最近用过</h2><span>只记在这台设备上</span></div>
+<section class="recent-sec" aria-label="最近使用与收藏">
+  <div class="sec-head"><h2>我的工具</h2><button type="button" class="sync-open" data-sync-open>跨设备同步</button></div>
+  <div class="recent-label">我的收藏</div>
+  <div class="recent-row" data-fav></div>
+  <div class="recent-label">最近用过</div>
   <div class="recent-row" data-recent></div>
+  <div class="sync-panel" data-sync-panel hidden>
+    <p class="sync-cur" data-sync-current>还没有同步码</p>
+    <div class="sync-row">
+      <input class="t-input" data-sync-code maxlength="12" placeholder="输入同步码" aria-label="同步码" spellcheck="false" autocomplete="off">
+      <button type="button" class="t-btn primary" data-sync-connect>连接</button>
+      <button type="button" class="t-btn" data-sync-new>生成新码</button>
+    </div>
+    <div class="sync-row">
+      <button type="button" class="t-btn" data-sync-push>上传本机</button>
+      <button type="button" class="t-btn" data-sync-pull>从云端拉取</button>
+      <button type="button" class="t-btn" data-sync-close>收起</button>
+    </div>
+    <p class="sync-msg" data-sync-msg>同步码是唯一凭据，只存工具编号，不存任何输入内容。数据 90 天不更新会自动过期。</p>
+  </div>
 </section>
 
 <section class="rank-sec" id="rank">
@@ -139,7 +158,7 @@ export function homeHTML() {
     <div class="side-card">
       <span class="side-label">累计使用次数</span>
       <b data-stat="uses">…</b>
-      <p>每次打开工具页计一次，同一会话重复打开不重复计数。榜单按累计次数实时排序。</p>
+      <p>用户真的操作过工具才算一次使用，同一会话对同一工具只计一次。榜单按累计次数实时排序。</p>
     </div>
     <div class="side-card soft">
       <span class="side-label">${svg('i-shield')}隐私说明</span>

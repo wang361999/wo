@@ -1,9 +1,14 @@
 /* 真实站点统计：匿名、无 Cookie、不采集任何工具输入内容。
-   浏览器只跟本站同源的 /api/stats 通信，数据库地址与凭据全在服务端，
-   页面不加载任何云 SDK，也不存在跨域限制。
-   上报的只有事件类型(visit/use)、工具 id 与一个本地随机会话 id；
-   实时在线人数按 45 秒内有心跳的会话数计算，热度榜按真实使用次数排序。
-   读不到服务时显示「—」和提示，绝不用假数字填充。 */
+   浏览器只跟本站同源的 /api/stats 通信，数据库地址与凭据全在服务端。
+
+   本轮修正：
+   - GET 不再带 no-store，让服务端 s-maxage 的 CDN 缓存真正生效，省下大量数据库命令配额；
+     POST 仍禁用缓存。
+   - 「使用次数」改成用户真的跟工具交互过才上报（由 tool.js 派发 op:tool-used），
+     不再是打开页面就算一次，热度榜的口径才对得上「使用」两个字。
+   - 连续读失败时拉长重试间隔，别在统计服务不可用时每 30 秒空转。
+   - 额外维护「最近用过 / 我的收藏」两份本地清单，供 sync.js 做跨设备同步。
+*/
 (function () {
   'use strict';
 
@@ -13,6 +18,7 @@
   var sid = '';
   var rootEl = document.getElementById('tool-root');
   var toolId = rootEl ? (rootEl.getAttribute('data-tool') || '') : '';
+  var failures = 0, retryAfter = 0;
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -40,10 +46,14 @@
   }
 
   function api(method, body) {
-    var opt = { method: method, cache: 'no-store' };
-    if (body) {
+    var opt = { method: method };
+    if (method === 'GET') {
+      // 故意不设 no-store：让 /api/stats 的 s-maxage 在 CDN 上合并读请求
+      opt.cache = 'default';
+    } else {
+      opt.cache = 'no-store';
       opt.headers = { 'Content-Type': 'application/json' };
-      opt.body = JSON.stringify(body);
+      opt.body = JSON.stringify(body || {});
     }
     return fetch(API, opt).then(function (r) {
       if (!r.ok) throw new Error('api ' + r.status);
@@ -76,7 +86,6 @@
     api('POST', { op: 'event', kind: kind, sid: sid, tool_id: tid || '' }).then(function (r) {
       if (r && r.ok) {
         mark(key);
-        // 本次上报落库后再读一次，首屏就能显示包含这次访问的真实数字
         setTimeout(refresh, 600);
       }
     }).catch(function () {});
@@ -94,7 +103,7 @@
     setStat('visitors', num(s.visitors));
     setStat('uses', num(s.uses));
     setStat('tool_users', num(s.tool_users));
-    setHint('数据实时更新 · 每次刷新与打开工具各计一次');
+    setHint('数据实时更新 · 每次访问与每次实际使用各计一次');
   }
 
   function renderRank(rows) {
@@ -103,7 +112,7 @@
 
     each('[data-rank]', function (box) {
       if (!top.length) {
-        box.innerHTML = '<p class="rank-empty">还没有使用记录。有人打开工具后，这里会按真实使用次数自动排榜。</p>';
+        box.innerHTML = '<p class="rank-empty">还没有使用记录。有人真正用过工具后，这里会按真实次数自动排榜。</p>';
         return;
       }
       var max = Number(top[0].uses) || 1;
@@ -123,53 +132,109 @@
     if (toolId) {
       var mine = null;
       for (var i = 0; i < list.length; i++) if (list[i].tool === toolId) { mine = list[i]; break; }
-      each('[data-tool-uses]', function (el) {
-        el.textContent = mine ? num(mine.uses) : '0';
-      });
+      each('[data-tool-uses]', function (el) { el.textContent = mine ? num(mine.uses) : '0'; });
+      // 榜单只回前 300 名，本工具不在榜里时保持 0，不编造数字
     }
   }
 
   function refresh() {
-    if (document.hidden) return;
+    if (document.hidden || Date.now() < retryAfter) return;
     api('GET').then(function (r) {
       if (!r || !r.stats) { markUnavailable(); return; }
+      failures = 0; retryAfter = 0;
       applyStats(r.stats);
       renderRank(r.rank);
       document.documentElement.setAttribute('data-stats', 'on');
-    }).catch(function () { markUnavailable(); });
+    }).catch(function () {
+      failures++;
+      markUnavailable();
+      if (failures >= 3) retryAfter = Date.now() + 120000;   // 连续失败后退避 2 分钟
+    });
   }
 
+  /* ---------- 最近用过 / 我的收藏（纯本地，跨设备同步由 sync.js 负责） ---------- */
+  function readList(k) {
+    var a = [];
+    try { a = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e) {}
+    if (!Array.isArray(a)) a = [];
+    return a.filter(function (x) { return typeof x === 'string' && MAP[x]; });
+  }
+  function writeList(k, a) {
+    try { localStorage.setItem(k, JSON.stringify(a)); } catch (e) {}
+  }
+  function changed() {
+    window.dispatchEvent(new CustomEvent('op:lists-changed'));
+  }
   function remember(id) {
-    try {
-      var a = JSON.parse(localStorage.getItem('op.recent') || '[]');
-      if (!Array.isArray(a)) a = [];
-      a = [id].concat(a.filter(function (x) { return x !== id; })).slice(0, 8);
-      localStorage.setItem('op.recent', JSON.stringify(a));
-    } catch (e) {}
+    if (!id || !MAP[id]) return;
+    var before = readList('op.recent');
+    if (before[0] === id) return;
+    writeList('op.recent', [id].concat(before.filter(function (x) { return x !== id; })).slice(0, 8));
+    renderRecent();
+    changed();
   }
-
+  function isFav(id) { return readList('op.fav').indexOf(id) >= 0; }
+  function toggleFav(id) {
+    if (!id || !MAP[id]) return false;
+    var a = readList('op.fav');
+    var on = a.indexOf(id) < 0;
+    writeList('op.fav', on ? [id].concat(a).slice(0, 40) : a.filter(function (x) { return x !== id; }));
+    renderFav();
+    changed();
+    each('[data-fav-btn]', function (el) {
+      el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      el.textContent = on ? '★ 已收藏' : '☆ 收藏';
+    });
+    return on;
+  }
+  function chip(id) {
+    var m = MAP[id];
+    if (!m) return '';
+    return '<a class="recent-chip" href="/tools/' + encodeURIComponent(id) + '/">' +
+      '<span style="background:' + esc(m.s) + '">' + esc(m.e) + '</span>' + esc(m.n) + '</a>';
+  }
   function renderRecent() {
     var box = document.querySelector('[data-recent]');
     if (!box) return;
-    var a = [];
-    try { a = JSON.parse(localStorage.getItem('op.recent') || '[]'); } catch (e) {}
-    if (!Array.isArray(a) || !a.length) {
-      box.innerHTML = '<span class="recent-empty">最近用过的工具会出现在这里</span>';
-      return;
-    }
-    box.innerHTML = a.map(function (id) {
-      var m = MAP[id];
-      if (!m) return '';
-      return '<a class="recent-chip" href="/tools/' + encodeURIComponent(id) + '/">' +
-        '<span style="background:' + esc(m.s) + '">' + esc(m.e) + '</span>' + esc(m.n) + '</a>';
-    }).join('');
+    var a = readList('op.recent');
+    box.innerHTML = a.length ? a.map(chip).join('') : '<span class="recent-empty">最近用过的工具会出现在这里</span>';
   }
+  function renderFav() {
+    var box = document.querySelector('[data-fav]');
+    if (!box) return;
+    var a = readList('op.fav');
+    box.innerHTML = a.length ? a.map(chip).join('') : '<span class="recent-empty">在工具页点「收藏」，常用工具会固定在这里</span>';
+  }
+
+  // 给 sync.js 用的小接口
+  window.__OP_STATS__ = {
+    remember: remember, renderRecent: renderRecent, renderFav: renderFav,
+    toggleFav: toggleFav, isFav: isFav,
+    getLists: function () { return { recent: readList('op.recent'), favorites: readList('op.fav') }; },
+    setLists: function (o) {
+      if (!o) return;
+      if (Array.isArray(o.recent)) writeList('op.recent', o.recent.filter(function (x) { return MAP[x]; }).slice(0, 8));
+      if (Array.isArray(o.favorites)) writeList('op.fav', o.favorites.filter(function (x) { return MAP[x]; }).slice(0, 40));
+      renderRecent(); renderFav();
+    },
+  };
 
   function start() {
     renderRecent();
+    renderFav();
+    each('[data-fav-btn]', function (el) {
+      var on = toolId && isFav(toolId);
+      el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      el.textContent = on ? '★ 已收藏' : '☆ 收藏';
+    });
+
     sid = sidGet();
     emit('visit');
-    if (toolId) { emit('use', toolId); remember(toolId); }
+    // 打开页面不再算使用；等 tool.js 检测到用户真的操作了工具再上报
+    window.addEventListener('op:tool-used', function (e) {
+      var id = (e && e.detail && e.detail.id) || toolId;
+      if (id) emit('use', id);
+    });
     ping();
     refresh();
     setInterval(ping, 30000);

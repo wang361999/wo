@@ -1,0 +1,16 @@
+# 生成器写 LF，Windows 上 core.autocrlf=true 会把工作区转成 CRLF，
+# 导致重跑一次 gen/generate.mjs 就出现 256 个「假改动」。统一签出为 LF。
+* text=auto eol=lf
+
+# 二进制资源不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.wasm binary
+*.pdf binary

@@ -108,7 +108,7 @@ for (const c of cats) {
 for (const t of TOOLS) {
   const tm = toolMeta(t, SITE_URL);
   writePage(path.join('tools', t.id), {
-    ...tm, body: toolHTML(t), isTool: true,
+    ...tm, body: toolHTML(t), isTool: true, mode: t.mode,
     jsonld: toolJsonLd(t, SITE_URL, tm.desc),
   });
 }
@@ -147,7 +147,7 @@ const urls = [
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<!-- 只列真实存在的页面；不带 lastmod，避免全站同日更新的失真信号 -->\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.writeFileSync(path.join(DIST, 'robots.txt'),
-  `User-agent: *\nAllow: /\n# 工具模块与本地处理库必须允许抓取，否则爬虫渲染不出页面\nAllow: /t/\nAllow: /vendor/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  `User-agent: *\nAllow: /\n# 工具模块与本地处理库必须允许抓取，否则爬虫渲染不出页面\nAllow: /t/\nAllow: /vendor/\n# 数据接口不是内容页，被爬只会白耗数据库命令配额\nDisallow: /api/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
 writeOgPng(path.join(DIST, 'og.png'));
 

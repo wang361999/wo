@@ -2,7 +2,7 @@
 // 规则：compute / process / run 一律用箭头函数；函数体内只能引用 v / ctx / L / D / 浏览器全局。
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TOOLS } from '../src/data/catalog.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -23,7 +23,9 @@ function ser(v, ind = 0) {
 const S = {};
 const files = fs.readdirSync(GEN).filter((f) => /^spec-.*\.mjs$/.test(f)).sort();
 for (const f of files) {
-  const mod = await import(path.join(GEN, f));
+  // Windows 上绝对路径是 C:\...，ESM 动态导入只认 file:// URL，否则
+  // ERR_UNSUPPORTED_ESM_URL_SCHEME。统一转成 URL 再导入。
+  const mod = await import(pathToFileURL(path.join(GEN, f)).href);
   if (!mod.S) throw new Error(`${f} 没有导出 S`);
   for (const [id, spec] of Object.entries(mod.S)) {
     if (!ids.has(id)) throw new Error(`${f} 里的 ${id} 不在注册表`);

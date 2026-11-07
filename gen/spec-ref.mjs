@@ -24,54 +24,71 @@ S['llm-api'] = { kind: 'ref', title: '大模型 API 速查', placeholder: '搜 D
   columns: [{ label: '厂商' }, { label: '代表模型' }, { label: 'Base URL' }, { label: '环境变量' }],
   rows: R('D.llm'), note: '接口地址与模型名会随厂商更新，以官方文档为准；密钥只放在你自己的环境里。' };
 
+/* 升级：以前在浏览器里直连 cloudflare trace / ipify / ipwho.is，受 CORS 影响且把访客 IP
+   暴露给多个外站。现在统一走本站同源 /api/net，服务端做缓存、限流与输入校验。 */
 S['ip'] = { kind: 'custom', render: (root, K) => {
   root.innerHTML = `<div class="t-work"><section class="t-panel wide">
-    <div class="t-head"><h2><span class="step">1</span>本机公网 IP</h2><span class="hint">查询需联网，图片文件不会上传</span></div>
+    <div class="t-head"><h2><span class="step">1</span>本机公网 IP</h2><span class="hint">经本站同源接口查询</span></div>
     <div class="t-actions"><button class="t-btn primary" type="button" id="go">查一下</button></div>
-    <div class="t-out html" id="res" style="margin-top:14px">点「查一下」读取当前出口 IP。</div>
-    <p class="t-hint">归属地来自公开 IP 库，仅作参考。这个页面不会保存或记录你的 IP；也可以在下面粘任意 IP 批量查。</p>
+    <div class="t-out html" id="res" style="margin-top:14px">点「查一下」读取当前出口 IP 与归属地。</div>
+    <p class="t-hint">IP 与归属地来自 CDN 边缘节点信息和公开 IP 库，仅作参考。本站不保存、不记录你的 IP；查询词只用于这一次取数。</p>
   </section>
   <section class="t-panel wide">
-    <div class="t-head"><h2><span class="step">2</span>批量查 IP</h2><span class="hint">一行一个</span></div>
+    <div class="t-head"><h2><span class="step">2</span>批量查 IP</h2><span class="hint">一行一个，最多 20 个</span></div>
     <textarea class="t-textarea" id="ips" rows="4" placeholder="8.8.8.8&#10;1.1.1.1"></textarea>
     <div class="t-actions"><button class="t-btn" type="button" id="batch">查询并导出 CSV</button><button class="t-btn" type="button" id="local">看本机内网地址</button></div>
     <div class="t-out" id="bres" style="margin-top:12px"></div>
   </section></div>`;
   const $ = (s) => root.querySelector(s);
   const out = (el, s) => { el.textContent = s; };
-  const ask = async (ip) => {
-    const r = await fetch('https://ipwho.is/' + encodeURIComponent(ip));
-    if (!r.ok) throw new Error('查询被拒绝');
-    return r.json();
+  const esc = L.esc;
+  const BOM = String.fromCharCode(0xFEFF);
+  const api = async (mode, q) => {
+    const u = '/api/net?mode=' + encodeURIComponent(mode) + (q ? '&q=' + encodeURIComponent(q) : '');
+    const r = await fetch(u);
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.detail || j.error || ('HTTP ' + r.status));
+    return j;
+  };
+  const stamp = (j) => '<p class="t-hint">' +
+    (j.stale ? '实时查询暂不可用，以下是上一次成功的结果。' : '数据实时查询，服务端短期缓存。') +
+    '来源：' + esc(j.source || '公开数据源') + (j.cached ? ' · 命中缓存' : '') +
+    (j.note ? '<br>' + esc(j.note) : '') + '</p>';
+  const card = (j) => {
+    const v = (x) => esc(x === '' || x === null || x === undefined ? '—' : x);
+    const ll = (j.latitude !== null && j.latitude !== undefined && j.longitude !== null && j.longitude !== undefined)
+      ? j.latitude + ', ' + j.longitude : '—';
+    return `<div class="t-stat-row">
+      <div class="t-stat"><b>${v(j.ip)}</b><span>公网 IP · ${v(j.version)}</span></div>
+      <div class="t-stat"><b>${v(j.country)}</b><span>国家/地区 ${j.country_code ? '(' + v(j.country_code) + ')' : ''}</span></div>
+      <div class="t-stat"><b>${v(j.region)}</b><span>省份 / 州</span></div>
+      <div class="t-stat"><b>${v(j.city)}</b><span>城市</span></div>
+      <div class="t-stat"><b>${v(j.isp)}</b><span>运营商${j.asn ? ' · ' + v(j.asn) : ''}</span></div>
+    </div><p class="t-hint">经纬度：${v(ll)}　时区：${v(j.timezone)}</p>` + stamp(j);
   };
   $('#go').onclick = async () => {
-    out($('#res'), '正在查询…');
+    const el = $('#res');
+    el.className = 't-out'; el.textContent = '正在查询…';
     try {
-      let ip = '';
-      try { const t = await (await fetch('https://www.cloudflare.com/cdn-cgi/trace')).text(); ip = (t.match(/^ip=(.*)$/m) || [])[1] || ''; } catch (e) {}
-      if (!ip) ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip;
-      let j = null;
-      try { j = await ask(ip); } catch (e) {}
-      $('#res').className = 't-out html';
-      $('#res').innerHTML = `<div class="t-stat-row"><div class="t-stat"><b>${L.esc(ip)}</b><span>公网 IP</span></div>
-        <div class="t-stat"><b>${L.esc(j?.country || '—')}</b><span>国家/地区</span></div>
-        <div class="t-stat"><b>${L.esc(j?.region || '—')}</b><span>省份</span></div>
-        <div class="t-stat"><b>${L.esc(j?.city || '—')}</b><span>城市</span></div>
-        <div class="t-stat"><b>${L.esc(j?.connection?.isp || j?.connection?.org || '—')}</b><span>运营商</span></div></div>
-        <p class="t-hint">经纬度：${L.esc(j ? `${j.latitude}, ${j.longitude}` : '—')}　时区：${L.esc(j?.timezone?.id || '—')}</p>`;
-    } catch (e) { out($('#res'), '查询失败：' + e.message + '。可能是网络限制，换个网络再试。'); }
+      const j = await api('self');
+      el.className = 't-out html';
+      el.innerHTML = card(j);
+    } catch (e) { out(el, '查询失败：' + e.message + '。稍后再试。'); }
   };
   $('#batch').onclick = async () => {
-    const list = L.nonEmptyLines($('#ips').value).slice(0, 50);
-    if (!list.length) { out($('#bres'), '先粘几个 IP'); return; }
-    out($('#bres'), `正在查询 ${list.length} 个…`);
-    const rows = [['IP', '国家', '省份', '城市', '运营商']];
+    const list = L.nonEmptyLines($('#ips').value).slice(0, 20);
+    const el = $('#bres');
+    if (!list.length) { out(el, '先粘几个 IP'); return; }
+    out(el, '正在查询 ' + list.length + ' 个…');
+    const rows = [['IP', '国家', '省份', '城市', '运营商', 'ASN', '时区']];
     for (const ip of list) {
-      try { const j = await ask(ip); rows.push([ip, j.country || '', j.region || '', j.city || '', j.connection?.isp || '']); }
-      catch (e) { rows.push([ip, '查询失败', '', '', '']); }
+      try {
+        const j = await api('ip', ip);
+        rows.push([ip, j.country || '', j.region || '', j.city || '', j.isp || '', j.asn || '', j.timezone || '']);
+      } catch (e) { rows.push([ip, '查询失败：' + e.message, '', '', '', '', '']); }
     }
-    out($('#bres'), L.toCSV(rows));
-    K.download('ip-查询.csv', '\\ufeff' + L.toCSV(rows), 'text/csv;charset=utf-8');
+    out(el, L.toCSV(rows));
+    K.download('ip-查询.csv', BOM + L.toCSV(rows), 'text/csv;charset=utf-8');
   };
   $('#local').onclick = async () => {
     try {
@@ -86,43 +103,58 @@ S['ip'] = { kind: 'custom', render: (root, K) => {
       out($('#bres'), '正在读取…');
     } catch (e) { out($('#bres'), '读取失败：' + e.message); }
   };
-  K.setAction && K.setAction;
 } };
 
+/* 升级：原先浏览器直连 Cloudflare DoH，跨域与限流都不可控。现在走同源 /api/net?mode=host，
+   服务端并行查 A / AAAA / CNAME、缓存 10 分钟、识别常见 CDN 厂商。 */
 S['domain-ip'] = { kind: 'custom', render: (root, K) => {
   root.innerHTML = `<div class="t-work"><section class="t-panel">
-    <div class="t-head"><h2><span class="step">1</span>域名</h2><span class="hint">一行一个</span></div>
+    <div class="t-head"><h2><span class="step">1</span>域名</h2><span class="hint">一行一个，最多 10 个</span></div>
     <textarea class="t-textarea" id="dom" rows="6" placeholder="example.com&#10;www.baidu.com">example.com</textarea>
     <div class="t-actions"><button class="t-btn primary" type="button" id="go">解析</button></div>
-    <p class="t-hint">用公共 DoH（DNS over HTTPS）查询，需要联网；域名本身会发给 DNS 服务商，文件不会上传。</p>
+    <p class="t-hint">真实 DNS 查询（A / AAAA / CNAME），经本站同源接口向公共 DoH 取数并短期缓存。只有域名会送到服务端，文件与页面里其它输入不上传。</p>
   </section><section class="t-panel">
     <div class="t-head"><h2><span class="step">2</span>解析结果</h2><span class="hint">A / AAAA / CNAME</span></div>
     <div class="t-out" id="res">等待解析。</div>
     <div class="t-actions"><button class="t-btn" type="button" id="csv">导出 CSV</button></div>
   </section></div>`;
   const $ = (s) => root.querySelector(s);
-  let last = [['域名', '类型', '值', 'TTL']];
-  const doh = async (name, type) => {
-    const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`, { headers: { Accept: 'application/dns-json' } });
-    if (!r.ok) throw new Error('DoH 请求失败');
-    return (await r.json()).Answer || [];
+  const esc = L.esc;
+  const BOM = String.fromCharCode(0xFEFF);
+  let last = [['域名', '类型', '值', 'TTL(秒)']];
+  const api = async (host) => {
+    const r = await fetch('/api/net?mode=host&q=' + encodeURIComponent(host));
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.detail || j.error || ('HTTP ' + r.status));
+    return j;
   };
+  const label = (t) => t === 'A' ? 'A / IPv4' : t === 'AAAA' ? 'AAAA / IPv6' : 'CNAME';
   $('#go').onclick = async () => {
-    const names = L.nonEmptyLines($('#dom').value).slice(0, 20);
-    if (!names.length) { $('#res').textContent = '先填域名'; return; }
-    $('#res').textContent = '解析中…';
-    last = [['域名', '类型', '值', 'TTL']];
+    const names = L.nonEmptyLines($('#dom').value).slice(0, 10);
+    const el = $('#res');
+    if (!names.length) { el.textContent = '先填域名'; return; }
+    el.className = 't-out'; el.textContent = '解析中…';
+    last = [['域名', '类型', '值', 'TTL(秒)']];
+    const cdns = [], sources = [];
+    let stale = false;
     for (const n of names) {
-      for (const t of ['A', 'AAAA', 'CNAME']) {
-        try { for (const a of await doh(n, t)) last.push([n, t === 'A' ? 'A / IPv4' : t === 'AAAA' ? 'AAAA / IPv6' : 'CNAME', a.data, String(a.TTL)]); }
-        catch (e) { last.push([n, t, '查询失败', '']); }
-      }
+      try {
+        const j = await api(n);
+        if (!j.answers || !j.answers.length) last.push([n, '—', '没有解析记录', '']);
+        for (const a of j.answers) last.push([n, label(a.type), a.value, String(a.ttl || '')]);
+        if (j.cdn) cdns.push(esc(n) + ' → ' + esc(j.cdn));
+        if (j.source && sources.indexOf(j.source) < 0) sources.push(j.source);
+        stale = stale || !!j.stale;
+      } catch (e) { last.push([n, '查询失败', e.message, '']); }
     }
-    const cn = last.filter((r) => r[1] === 'CNAME');
-    $('#res').textContent = last.map((r) => r.join('\t')).join('\n') +
-      (cn.length ? '\n\n出现 CNAME 通常说明该域名接了 CDN。' : '');
+    const rows = last.slice(1).map((r) => '<tr>' + r.map((c) => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('');
+    el.className = 't-out html';
+    el.innerHTML = '<table class="t-table"><thead><tr><th>域名</th><th>类型</th><th>值</th><th>TTL</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      (cdns.length ? '<p class="t-hint">识别到 CDN：' + cdns.join('；') + '。CNAME 指向这些厂商通常说明域名接了 CDN。</p>' : '') +
+      '<p class="t-hint">' + (stale ? '实时查询暂不可用，部分是上一次成功的结果。' : '真实 DNS 解析结果，服务端缓存 10 分钟。') +
+      (sources.length ? '来源：' + esc(sources.join(' / ')) : '') + '</p>';
   };
-  $('#csv').onclick = () => { K.download('域名解析.csv', '\\ufeff' + L.toCSV(last), 'text/csv;charset=utf-8'); };
+  $('#csv').onclick = () => { K.download('域名解析.csv', BOM + L.toCSV(last), 'text/csv;charset=utf-8'); };
 } };
 
 /* ============ 文本与开发速查 ============ */

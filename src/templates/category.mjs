@@ -31,7 +31,7 @@ export function categoryHTML(cat, tools) {
   <div>
     <div class="th-kicker"><span>工具分类</span><span class="tk-dot">·</span><span>共 ${tools.length} 个工具</span></div>
     <h1>${esc(cat.name)}</h1>
-    <p>${esc(cat.name)}共 ${tools.length} 个工具，打开就能用，不用注册，文件也不会上传到服务器。</p>
+    <p>${esc(cat.name)}共 ${tools.length} 个工具，打开就能用，不用注册；绝大多数在浏览器本地运行，实时数据类工具经本站接口取数。</p>
   </div>
 </header>
 

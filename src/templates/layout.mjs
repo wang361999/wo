@@ -27,7 +27,7 @@ const SYMBOLS = `
   <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3"/></symbol>
 </svg>`;
 
-export function layout({ title, desc = '', body, isTool = false, canonical, siteUrl, jsonld, ogType = 'website', script = '/app.js' }) {
+export function layout({ title, desc = '', body, isTool = false, canonical, siteUrl, jsonld, ogType = 'website', script = '/app.js', mode = '' }) {
   const head = isTool
     ? `<nav class="head-nav" aria-label="主导航">
          <a href="/" class="nav-back">${svg('i-left')}全部工具</a>
@@ -35,7 +35,7 @@ export function layout({ title, desc = '', body, isTool = false, canonical, site
          <a href="/cat/image/">图片</a>
          <a href="/cat/dev/">文本与开发</a>
        </nav>
-       <span class="head-badge">${svg('i-shield')}浏览器本地运行</span>`
+       <span class="head-badge">${svg('i-shield')}${mode === 'api' ? '查询经本站接口' : '浏览器本地运行'}</span>`
     : `<nav class="head-nav" aria-label="主导航">
          <a href="/" class="on">全部工具</a>
          <a href="/cat/pdf/">PDF 工具</a>
@@ -77,7 +77,7 @@ export function layout({ title, desc = '', body, isTool = false, canonical, site
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css">${ld}
 </head>
-<body>
+<body${mode ? ` data-mode="${esc(mode)}"` : ''}>
 ${SYMBOLS}
 <header class="site-head"><div class="wrap head-in">
   <a class="brand" href="/" aria-label="${esc(SITE_NAME)}首页">
@@ -90,9 +90,9 @@ ${SYMBOLS}
 <footer class="site-foot"><div class="wrap foot-in">
   <div class="foot-brand">
     <span class="brand-mark sm">${svg('i-logo')}</span>
-    <span><b>${SITE_NAME}</b><small>${TOOLS.length} 个免费在线工具 · 全部在浏览器本地运行</small></span>
+    <span><b>${SITE_NAME}</b><small>${TOOLS.length} 个免费在线工具 · 绝大多数纯本地运行</small></span>
   </div>
-  <span class="foot-meta">文件不上传 · 输入内容不采集 · 访问仅匿名计数</span>
+  <span class="foot-meta">文件不上传 · 输入内容不采集 · 统计匿名去重</span>
   <a href="/" class="foot-top">回到首页 ${svg('i-up')}</a>
 </div></footer>
 
@@ -105,6 +105,7 @@ ${SYMBOLS}
 
 <script src="/tools-map.js"></script>
 <script src="/stats.js"></script>
+<script src="/sync.js"></script>
 <script src="/ui.js"></script>
 ${js}
 </body>

@@ -135,7 +135,16 @@ export function formTool(spec) {
       root, values, $, $$,
       setOut(x) { if (typeof x === 'string') { outEl.className = 't-out'; outEl.textContent = x; } else { outEl.className = 't-out html'; outEl.innerHTML = x.html || ''; } },
       setStats(arr) { statsEl.innerHTML = (arr || []).map((s) => `<div class="t-stat"><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`).join(''); },
-      setPreview(html) { if (html) { previewEl.style.display = ''; previewEl.innerHTML = html; } else { previewEl.style.display = 'none'; previewEl.innerHTML = ''; } },
+      setPreview(html) {
+        if (!html) { previewEl.style.display = 'none'; previewEl.innerHTML = ''; return; }
+        previewEl.style.display = '';
+        // .t-preview 是 flex 居中容器；多个顶层元素（说明 + 表格 + 图表）不包一层会被并排挤在一起。
+        // 只有单个元素时保持原样，画布 / 二维码的居中效果不受影响。
+        const probe = document.createElement('div');
+        probe.innerHTML = html;
+        previewEl.innerHTML = probe.children.length > 1
+          ? '<div class="t-preview-inner">' + html + '</div>' : html;
+      },
       setError(msg) { errEl.textContent = msg || ''; errEl.style.display = msg ? '' : 'none'; },
       toast, copy, download, canvasDownload,
       refresh: () => run(),

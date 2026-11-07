@@ -1,5 +1,5 @@
-// 工具注册表：来自 toolbox365.cn 公开工具目录（分类与端分级映射）。
-// 描述为功能性摘要，非原文照抄。status: ready 已实现 / later 后续批次 / lib 需引库 / blocked 静态站无法承接。
+// 工具注册表：分类体系、端分级与工具清单。desc 是功能摘要。
+// status 是早期分批实现时的进度标记，导出时统一为 ready；tier 用于生成阶段分组。
 
 export const DEVS = [
   { id:'all', name:'全部' },
@@ -314,18 +314,22 @@ const RAW = [
    mode 表示实现档位，用来如实说明「这个工具是怎么跑起来的」，不是完成度。 */
 const VENDOR_IDS = new Set(["archive-extract", "archive-zip", "barcode", "barcode-batch", "duckdb-sql", "epub-edit", "epub-metadata", "epub-to-txt", "excel-edit", "file-search", "font-subset", "ga-import", "gif-maker", "img-to-pdf", "latex-math", "md-editor", "md2wechat", "mobi-to-epub", "novel-reader", "ocr", "pdf-compress", "pdf-decrypt", "pdf-diff", "pdf-edit", "pdf-merge", "pdf-page-number", "pdf-remove-page-number", "pdf-sign", "pdf-split", "pdf-to-img", "pdf-to-text", "pdf-watermark", "phone-cam", "qrcode", "qrcode-batch", "sqlite-viewer", "txt-to-epub"]);
 const LITE_IDS = new Set(["ancient-units", "ascii-table", "asset-level", "cn-dns", "cn-mirrors", "cn-ntp", "coca-list", "coca-rank", "coca-text", "cooking-convert", "district", "emoji-search", "garbage-sort", "git-ref", "gitignore", "http-headers", "http-ref", "id-card", "life-guide", "llm-api", "mock-data", "phone-location", "poetry", "purine", "quiz", "regex-ref", "shoe-size", "tax-calc", "travel-price-scale", "unit", "vocab-test", "wind-scale"]);
+/* 接了本站同源服务端能力的工具：以前被静态站限制挡着，只能写死数据或让浏览器直连外站。
+   这 4 个现在经 /api/net 与 /api/fx 取真实数据，档位单独标出来，隐私说明也必须跟着变。 */
+const API_IDS = new Set(["ip", "domain-ip", "currency", "currency-rank"]);
 
 export const TOOLS = RAW.map((t) => ({
   ...t,
   status: 'ready',
-  mode: VENDOR_IDS.has(t.id) ? 'vendor' : LITE_IDS.has(t.id) ? 'lite' : 'local',
+  mode: API_IDS.has(t.id) ? 'api' : VENDOR_IDS.has(t.id) ? 'vendor' : LITE_IDS.has(t.id) ? 'lite' : 'local',
 }));
 
-export const MODE_NAME = { local: '纯本地', vendor: '本地库', lite: '离线精简' };
+export const MODE_NAME = { local: '纯本地', vendor: '本地库', lite: '离线精简', api: '在线数据' };
 export const MODE_DESC = {
   local: '只用浏览器原生能力计算，零依赖，打开即用。',
   vendor: '处理库已随站点打包在本地（/vendor/），首次使用只是加载脚本，不联网、不上传文件。',
   lite: '内置的是精简数据集或语料，够日常速查，但不是完整官方数据；具体边界写在工具里。',
+  api: '经本站同源接口查询实时数据并在服务端短期缓存；查询词会送到本站服务用于取数，不落库、不关联身份，也不采集工具里的其它输入。',
 };
 
 export const CAT_MAP = Object.fromEntries(CATS.map(c=>[c.id,c]));
