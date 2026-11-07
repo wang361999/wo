@@ -1,6 +1,6 @@
 # 一页工具
 
-纯前端、零依赖的在线工具箱静态站。所有计算与文件处理都在浏览器里完成，**没有上传接口、不用登录、不依赖外部 CDN**。
+纯前端、零依赖的在线工具箱静态站。所有计算与文件处理都在浏览器里完成，**没有文件上传接口、不用登录、不依赖外部 CDN**。站点另有一套匿名访问计数（只记事件类型与工具编号，不采集输入内容），用于实时在线人数与工具热度榜，详见「真实统计」。
 
 工具清单与分类参考自 [365工具箱](https://www.toolbox365.cn/) 的公开目录：**286 个工具 / 10 个功能分类，已全部接入**。每个工具都有独立网址 `/tools/<id>/`、一个真实模块 `src/tools/<id>.js`，点开就能跑，没有占位卡片、没有空壳页。
 
@@ -29,13 +29,17 @@ node build.mjs           # 生成 dist/
 
 ```
 src/data/catalog.mjs      注册表：11 条 CATS（含 all）+ 端分级 + 286 条工具（mode 档位）
-src/templates/layout.mjs  全站布局、品牌头与页脚
-src/templates/home.mjs    门面（SSR 输出 286 张工具卡片 + 10 个分类静态链接）
-src/templates/category.mjs 分类落地页（静态工具清单）
-src/templates/tool.mjs    工具页工作台壳（静态说明、FAQ、同类内链）
+src/data/theme.mjs        10 个分类的配色与图标（工具宫格 / 热度榜 / 最近使用共用）
+src/templates/layout.mjs  全站布局、品牌头、页脚与移动端底部导航
+src/templates/home.mjs    门面（图标宫格 + 实时数据 + 热度榜 + 286 张工具卡片 + 分类静态链接）
+src/templates/category.mjs 分类落地页（静态工具清单 + 热度榜）
+src/templates/tool.mjs    工具页工作台壳（静态说明、FAQ、同类内链、使用次数）
 src/templates/seo.mjs     全站 title / description / JSON-LD 生成
-src/static/style.css      浅色卡片主题 + 单套响应式 + 286 个工具共用组件
+src/static/style.css      图标驱动的工具站主题 + 单套响应式 + 286 个工具共用组件
 src/static/app.js         门面交互：搜索、两级筛选、计数联动、/ 快捷键
+src/static/cloud-config.js 云服务公开配置（endpoint / publishableKey，可随前端发布）
+src/static/stats.js       匿名统计：事件上报、在线心跳、实时数据读取、热度榜渲染
+src/static/ui.js          底部导航、分享、回顶
 src/static/tool.js        工具页加载器：按 data-tool 动态 import 模块
 src/static/kit.js         工具运行时：formTool / customTool / 复制下载吸底等 helper
 src/static/engines.js     refTool / fileTool / gamePanel + PDF·音频·二维码等公用件
@@ -45,8 +49,8 @@ src/tools/<id>.js         286 个工具模块，统一导出 mount(root)；30 �
 gen/spec-*.mjs            11 份工具规格（S['id'] = {...}），按 kind 编译成模块
 gen/generate.mjs          规格编译器：ser() 序列化 spec，写 src/tools/*.js
 src/lib/zip.js            原生 JS 手写 ZIP（store + CRC32）
-public/vendor/            本地处理库与 KaTeX 字体
-build.mjs                 读注册表 → 生成 297 个页面 / 资源 / sitemap / robots / og.png
+public/vendor/            本地处理库、KaTeX 字体与本地固化的云 SDK 浏览器构建
+build.mjs                 读注册表 → 生成 297 个页面 / 资源 / tools-map.js / sitemap / robots / og.png
 scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链、孤岛页、sitemap 一致性
 ```
 
@@ -55,7 +59,11 @@ scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链
 - **第一级**：全部 / 电脑端 / 手机端。工具标 `dev`（`pc` / `mobile` / `both`），切一级时二级计数联动。
 - **第二级**：10 个功能分类（导航资源、PDF 工具、图片、音频/视频、文本与开发、中文语言、生活与杂务、财务与计算、CSS 生成器、益智游戏）。
 
-视觉是**克制的浅色工具目录**：白底卡片、中性灰文字层级、单一稳重蓝（`#2f5bd7`）、常规字号，一套自适应响应式布局，不再分电脑端 / 手机端两套 DOM。首页是常规标题 + 大搜索框 + 两级筛选 + 三列工具卡片，窄屏自动收成单列。工具页把交互区包进带浅色标题栏的工作台卡片；286 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
+视觉是**图标驱动的工具站**：浅灰底 + 白卡片 + 10 个分类各自的柔和色图标 + 单一稳重蓝（`#2f5bd7`），不是文字目录。首页自上而下是紧凑标题与大搜索框、**实时数据条**（当前在线 / 历史访问 / 独立访客 / 使用人数）、8 格常用工具图标宫格、最近使用、按真实次数排序的热度榜、10 个分类入口，最后才是 286 个工具的筛选索引。工具页有彩色分类图标、本工具使用次数、工作台、热度榜与同类工具图标清单。
+
+**移动端按 App 的信息架构做**：底部固定四栏 TabBar（首页 / 分类 / 榜单 / 搜索）、4 列九宫格快捷入口、2×2 紧凑数据卡、可横滑的热度榜卡片、工具页右下角竖排圆形悬浮操作（首页 / 分享 / 回顶），`viewport-fit=cover` 适配安全区。仍是**一套自适应响应式**，没有电脑端 / 手机端两套 DOM。
+
+286 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
 
 ## 加一个工具（三步，壳不用改）
 
@@ -66,6 +74,24 @@ scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链
 `generate.mjs` 和 `build.mjs` 各有一道防线：**注册表里任意一个工具缺少模块就直接报错退出**，杜绝「索引能点、页面空白」。
 
 > 生成器只序列化函数体，不会把 spec 文件里的顶层 helper / 常量带进产物。需要跨函数复用的东西都放在 `src/static/engines.js` 并由 `generate.mjs` 的 HEAD 导入；模板字符串里不要引用 spec 顶层常量，否则浏览器里会 `ReferenceError`。
+
+## 真实统计（匿名计数）
+
+页面上的四个数字与热度榜都来自云数据库的服务端聚合，没有写死的假数据：
+
+| 页面显示 | 口径 |
+|---|---|
+| 当前在线 | 45 秒内有心跳的匿名会话数（心跳每 20 秒一次，页面隐藏时暂停） |
+| 历史访问人次 | `events` 表中 `kind='visit'` 的总条数 |
+| 独立访客 | `visit` 事件中不同 `sid` 的个数 |
+| 工具使用人数 | `kind='use'` 事件中不同 `sid` 的个数 |
+| 累计使用次数 / 热度榜 | `kind='use'` 按 `tool_id` 计数并降序排列 |
+
+- 两张表：`events`（访问 / 使用事件，只追加）与 `presence`（在线心跳，按 `sid` 覆盖写，不会无限膨胀）；只读聚合函数 `site_stats()` 与 `tool_rank(n)` 在数据库里算好再返回，前端不拉全表。
+- 同一浏览器会话内，访问和「每个工具的使用」各只计一次（`sessionStorage` 去重）；热度榜按累计次数实时排序，页面每 30 秒刷新一次，切回前台立即刷新。
+- 匿名标识是本机 `localStorage` 里的随机 id，没有账号、没有 Cookie 跟踪。上报字段只有事件类型、工具编号、随机会话 id 与时间戳，**不含任何工具输入内容**。
+- 读不到统计服务时显示「—」并给出提示，绝不用假数字填充。
+- 云 SDK 的浏览器构建已固化在 `public/vendor/workbuddy-cloud-sdk.js` 随站发布（不引外部 CDN）；`cloud-config.js` 里只有公开的 endpoint 与 publishableKey，无长期密钥。`build.mjs` 会生成 `tools-map.js`，供热度榜把工具 id 映射成名称与分类色。
 
 ## 部署（Vercel）
 

@@ -1,6 +1,7 @@
-// 工具页：静态正文 + 工具工作台。交互模块由 /tool.js 挂进 #tool-root。
+// 工具页：静态正文 + 工具工作台 + 真实使用数据 + 热度榜。交互模块由 /tool.js 挂进 #tool-root。
 // 所有 SEO 内容（面包屑、正文、FAQ、同类内链、分类链接）保持完整。
 import { TOOLS, CATS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
+import { catTheme } from '../data/theme.mjs';
 import { svg, esc, SITE_NAME } from './layout.mjs';
 import { CAT_SEO, cleanDesc } from './seo.mjs';
 
@@ -54,6 +55,7 @@ const DEV_PROSE = {
 
 export function toolHTML(t) {
   const cat = CAT_MAP[t.cat] || { name: '其它', icon: '🔧' };
+  const th = catTheme(t.cat);
   const seo = CAT_SEO[t.cat] || { line: '打开就能用，不用注册。' };
   const feat = cleanDesc(t.desc);
   const related = relatedTools(t);
@@ -65,16 +67,25 @@ export function toolHTML(t) {
 <nav class="crumb"><a href="/">首页</a><span class="sep">/</span>
   <a href="/cat/${t.cat}/">${esc(cat.name)}</a><span class="sep">/</span><span>${esc(t.name)}</span></nav>
 
-<header class="tool-head">
-  <div class="th-kicker"><span>${esc(cat.name)}</span><span class="tk-dot">·</span><span>${DEV_NAME[t.dev]}端适用</span><span class="tk-dot">·</span><span>${MODE_NAME[t.mode]}</span></div>
-  <h1><span class="h-emoji" aria-hidden="true">${esc(t.icon)}</span>${esc(t.name)}</h1>
-  <p>${esc(feat)}。${esc(seo.line)}</p>
-  <div class="th-tags">
-    <span class="pill">${svg('i-shield')}本地处理，文件不上传</span>
-    <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span>
-    <span class="badge m-${t.mode === 'local' ? 'local' : t.mode === 'vendor' ? 'vendor' : 'lite'}">${MODE_NAME[t.mode]}</span>
+<header class="tool-head" style="--cc:${th.color};--cs:${th.soft}">
+  <span class="th-ic" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
+  <div class="th-main">
+    <div class="th-kicker"><span>${esc(cat.name)}</span><span class="tk-dot">·</span><span>${DEV_NAME[t.dev]}端适用</span><span class="tk-dot">·</span><span>${MODE_NAME[t.mode]}</span></div>
+    <h1>${esc(t.name)}</h1>
+    <p>${esc(feat)}。${esc(seo.line)}</p>
+    <div class="th-tags">
+      <span class="pill">${svg('i-shield')}本地处理，文件不上传</span>
+      <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span>
+      <span class="badge m-${t.mode === 'local' ? 'local' : t.mode === 'vendor' ? 'vendor' : 'lite'}">${MODE_NAME[t.mode]}</span>
+    </div>
   </div>
 </header>
+
+<div class="tool-metrics">
+  <div><span>本工具已使用</span><b><span data-tool-uses>…</span> <small>次</small></b></div>
+  <div><span>全站当前在线</span><b><span data-stat="online">…</span> <small>人</small></b></div>
+  <div><span>全站累计使用</span><b><span data-stat="uses">…</span> <small>次</small></b></div>
+</div>
 
 <section class="workbench" aria-label="${esc(t.name)} 工具区">
   <div class="wb-bar">
@@ -111,7 +122,7 @@ export function toolHTML(t) {
     <div class="sec-head"><h2>常见问题</h2></div>
     <dl class="faq">
       <dt>${esc(t.name)}会把我的文件上传到服务器吗？</dt>
-      <dd>不会。${esc(SITE_NAME)}是纯前端静态站，没有上传接口，也没有保存用户输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。</dd>
+      <dd>不会。${esc(SITE_NAME)}是纯前端静态站，没有上传接口，也没有保存用户输入的地方。图片、文本、音频都只在当前标签页里被读取和处理，刷新或关掉就没了。站点只做匿名访问计数，不涉及你填写的内容。</dd>
       <dt>手机上能用${esc(t.name)}吗？</dt>
       <dd>${esc(DEV_PROSE[t.dev] || DEV_PROSE.both)}另外这个工具标的是「${DEV_NAME[t.dev]}」。</dd>
       <dt>要注册、要付费、有次数限制吗？</dt>
@@ -122,16 +133,27 @@ export function toolHTML(t) {
   </section>
 
   <aside class="side-col">
+    <section class="side-rank"><div class="sec-head"><h2>工具热度榜</h2><span>实时</span></div>
+      <div class="rank-list" data-rank><p class="rank-empty">正在读取真实使用数据…</p></div>
+    </section>
     <section class="related"><div class="sec-head"><h2>同类工具</h2></div>
-      <div class="related-grid">${related.map((r, i) =>
-        `<a class="mini" href="/tools/${r.id}/"><span class="mi-no">${String(i + 1).padStart(2, '0')}</span>
-           <span class="mi-txt"><b>${esc(r.name)}</b><span class="md">${esc(cleanDesc(r.desc))}</span></span>
-           <span class="mi-arw">${svg('i-arw')}</span></a>`
-      ).join('')}</div>
+      <div class="related-grid">${related.map((r) => {
+        const rt = catTheme(r.cat);
+        return `<a class="mini" href="/tools/${r.id}/">
+          <span class="mi-ic" style="--ic:${rt.soft}" aria-hidden="true">${esc(r.icon || rt.emoji)}</span>
+          <span class="mi-txt"><b>${esc(r.name)}</b><span>${esc(cleanDesc(r.desc))}</span></span>
+          <span class="mi-arw">${svg('i-arw')}</span></a>`;
+      }).join('')}</div>
       <p class="related-more"><a href="/cat/${t.cat}/">查看${esc(cat.name)}全部工具 →</a></p>
     </section>
     <section class="cat-jump"><h2>换个分类</h2><nav class="cat-jump-links" aria-label="其它分类">${others}</nav></section>
   </aside>
+</div>
+
+<div class="mobile-actions" aria-label="快捷操作">
+  <a href="/">${svg('i-home')}<span>首页</span></a>
+  <button type="button" data-share="1">${svg('i-share')}<span>分享</span></button>
+  <button type="button" data-scrolltop="1">${svg('i-top')}<span>顶部</span></button>
 </div>
 `;
 }

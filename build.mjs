@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TOOLS, CATS } from './src/data/catalog.mjs';
+import { catTheme } from './src/data/theme.mjs';
 import { layout, SITE_NAME, SITE_TAGLINE } from './src/templates/layout.mjs';
 import { homeHTML } from './src/templates/home.mjs';
 import { toolHTML } from './src/templates/tool.mjs';
@@ -76,6 +77,16 @@ copyDir(path.join(ROOT, 'src/lib'), path.join(DIST, 'lib'));
 const toolCount = copyDir(path.join(ROOT, 'src/tools'), path.join(DIST, 't'), (f) => f.endsWith('.js'));
 copyDir(path.join(ROOT, 'public'), DIST);
 
+/* 工具 id → 名称 / 分类色 / 图标，供热度榜与「最近用过」在浏览器里查表。
+   只写公开元数据，不含任何凭据。 */
+const toolsMap = {};
+for (const t of TOOLS) {
+  const th = catTheme(t.cat);
+  toolsMap[t.id] = { n: t.name, c: th.color, s: th.soft, e: t.icon || th.emoji };
+}
+fs.writeFileSync(path.join(DIST, 'tools-map.js'),
+  `window.__TOOLS_MAP__=${JSON.stringify(toolsMap).replace(/</g, '\\u003c')};\n`);
+
 // 首页
 const hm = homeMeta(SITE_URL);
 writePage('', {
@@ -119,7 +130,7 @@ fs.writeFileSync(path.join(DIST, '404.html'), `<!DOCTYPE html>
 </div></header>
 <main class="wrap"><section class="hero">
   <div class="hero-eyebrow"><span class="eyebrow-dot"></span>404 · 页面不存在</div>
-  <h1>这个页面<br><span>不在这里</span></h1>
+  <h1>这个页面不在这里</h1>
   <p class="hero-lede">链接可能已经失效。回首页看看全部 ${TOOLS.length} 个工具，或者直接用搜索找。</p>
   <p style="margin-top:26px"><a class="foot-top" href="/">回到首页</a></p>
 </section></main>

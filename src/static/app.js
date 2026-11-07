@@ -1,100 +1,102 @@
-/* 索引页交互：条目由服务端一次性输出且全是链接，这里只做筛选、计数联动与快捷键。 */
+/* 首页交互：搜索 + 两级筛选 + 计数联动。DOM 契约保持 #grid .card / data-d / data-c / data-search。 */
 (function () {
-  const cards = Array.from(document.querySelectorAll('#grid .card'));
-  const grid = document.getElementById('grid');
-  const emptyState = document.getElementById('emptyState');
-  const q = document.getElementById('q');
-  const qClear = document.getElementById('qClear');
-  const label = document.getElementById('resultLabel');
-  const caps = document.querySelectorAll('.dev-cap');
+  'use strict';
+  var q = document.getElementById('q');
+  var grid = document.getElementById('grid');
+  if (!q || !grid) return;
 
-  let activeDev = 'all';
-  let activeCat = 'all';
-  let keyword = '';
+  var cards = Array.prototype.slice.call(grid.querySelectorAll('.card'));
+  var clearBtn = document.getElementById('qClear');
+  var empty = document.getElementById('emptyState');
+  var resultCount = document.getElementById('resultCount');
+  var devCap = document.getElementById('devCap');
+  var activeDev = 'all', activeCat = 'all';
 
-  const inDev = (dev, d) => d === 'all' || dev === d || dev === 'both';
-  const countDev = (d) => cards.filter((c) => inDev(c.dataset.d, d)).length;
-  const countCat = (c, d) => cards.filter((x) => inDev(x.dataset.d, d) && (c === 'all' || x.dataset.c === c)).length;
-  const nameOf = (btn) => {
-    const clone = btn.cloneNode(true);
-    clone.querySelectorAll('.n, .ds-id, .cc-no, .cat-emoji').forEach((x) => x.remove());
-    return clone.textContent.trim();
-  };
-  const catName = (id) => {
-    const b = document.querySelector(`.cat-chip[data-cat="${id}"]`);
-    return b ? nameOf(b) : '全部工具';
-  };
-  const devName = (id) => {
-    const b = document.querySelector(`.dev-seg [data-dev="${id}"]`);
-    return b ? nameOf(b) : '全部';
-  };
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function inDev(d, dev) { return d === 'all' || dev === d || dev === 'both'; }
 
-  function visibleCards() {
-    const k = keyword.trim().toLowerCase();
-    return cards.filter((c) => {
-      if (!inDev(c.dataset.d, activeDev)) return false;
-      if (activeCat !== 'all' && c.dataset.c !== activeCat) return false;
-      if (k && !c.dataset.search.includes(k)) return false;
-      return true;
-    });
+  function matches(c, kw) {
+    if (!inDev(activeDev, c.dataset.d)) return false;
+    if (activeCat !== 'all' && c.dataset.c !== activeCat) return false;
+    if (kw && (c.dataset.search || '').indexOf(kw) < 0) return false;
+    return true;
   }
 
   function apply() {
-    // 分类落地页是纯静态页，也加载这份脚本，但没有索引网格
-    if (!grid) return;
-    const list = visibleCards();
-    const show = new Set(list);
-    cards.forEach((c) => c.classList.toggle('hidden', !show.has(c)));
-    grid.classList.toggle('hidden', list.length === 0);
-    emptyState.classList.toggle('hidden', list.length !== 0);
+    var kw = q.value.trim().toLowerCase();
+    var n = 0;
+    for (var i = 0; i < cards.length; i++) {
+      var ok = matches(cards[i], kw);
+      cards[i].hidden = !ok;
+      if (ok) n++;
+    }
+    if (resultCount) resultCount.textContent = '显示 ' + n + ' 个工具';
+    if (empty) empty.classList.toggle('hidden', n > 0);
+    if (clearBtn) clearBtn.classList.toggle('hidden', !q.value);
 
-    document.querySelectorAll('.dev-seg [data-dev]').forEach((b) => b.classList.toggle('on', b.dataset.dev === activeDev));
-    document.querySelectorAll('.cat-chip[data-cat]').forEach((b) => b.classList.toggle('on', b.dataset.cat === activeCat));
-    document.querySelectorAll('[data-dev-n]').forEach((n) => { n.textContent = countDev(n.dataset.devN); });
-    document.querySelectorAll('[data-cat-n]').forEach((n) => { n.textContent = countCat(n.dataset.catN, activeDev); });
-
-    const cap = activeDev === 'all'
-      ? '标「两端」的工具在电脑和手机上都能用。'
-      : (activeDev === 'pc'
-        ? '已按电脑端筛选，标「两端」的工具也包含在内。'
-        : '已按手机端筛选，标「两端」的工具也包含在内。');
-    caps.forEach((c) => { c.textContent = cap; });
-
-    const bits = [];
-    if (activeDev !== 'all') bits.push(devName(activeDev));
-    bits.push(catName(activeCat));
-    label.innerHTML = keyword.trim()
-      ? `搜索「<b>${esc(keyword.trim())}</b>」· 找到 <b>${list.length}</b> 个`
-      : `<b>${bits.join(' / ')}</b> · 共 <b>${list.length}</b> 个工具`;
-    qClear.classList.toggle('hidden', !keyword);
+    var devNodes = document.querySelectorAll('[data-dev-n]');
+    for (var a = 0; a < devNodes.length; a++) {
+      var d = devNodes[a].getAttribute('data-dev-n');
+      var c1 = 0;
+      for (var j = 0; j < cards.length; j++) if (inDev(d, cards[j].dataset.d)) c1++;
+      devNodes[a].textContent = c1;
+    }
+    var catNodes = document.querySelectorAll('[data-cat-n]');
+    for (var b = 0; b < catNodes.length; b++) {
+      var c = catNodes[b].getAttribute('data-cat-n');
+      var c2 = 0;
+      for (var k = 0; k < cards.length; k++) {
+        if (!inDev(activeDev, cards[k].dataset.d)) continue;
+        if (c !== 'all' && cards[k].dataset.c !== c) continue;
+        c2++;
+      }
+      catNodes[b].textContent = c2;
+    }
   }
 
-  function reset() {
-    activeDev = 'all'; activeCat = 'all'; keyword = '';
-    if (q) q.value = '';
-    apply();
-  }
-
-  const main = document.getElementById('main');
-  if (main) main.addEventListener('click', (e) => {
-    const dev = e.target.closest('.dev-seg [data-dev]');
-    if (dev) { activeDev = dev.dataset.dev; apply(); return; }
-    const cat = e.target.closest('.cat-chip[data-cat]');
-    if (cat) { activeCat = cat.dataset.cat; apply(); return; }
-    if (e.target.closest('[data-reset]')) { reset(); return; }
+  q.addEventListener('input', apply);
+  if (clearBtn) clearBtn.addEventListener('click', function () {
+    q.value = ''; apply(); q.focus();
   });
 
-  q && q.addEventListener('input', () => { keyword = q.value; apply(); });
-  qClear && qClear.addEventListener('click', () => { keyword = ''; q.value = ''; apply(); q.focus(); });
-  document.addEventListener('keydown', (e) => {
-    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
-    if (e.key === '/' && !typing && q) { e.preventDefault(); q.focus(); return; }
-    if (e.key === 'Escape' && keyword) { keyword = ''; q.value = ''; apply(); }
+  document.querySelectorAll('.dev-seg [data-dev]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activeDev = btn.getAttribute('data-dev');
+      document.querySelectorAll('.dev-seg [data-dev]').forEach(function (x) { x.classList.toggle('on', x === btn); });
+      if (devCap) {
+        devCap.textContent = activeDev === 'all'
+          ? '标「两端」的工具在电脑和手机上都能用。'
+          : activeDev === 'pc'
+            ? '电脑端：尺寸大、要精细调、批量处理。标「两端」的也能用。'
+            : '手机端：粘进来、点一下，做好直接发出去。标「两端」的也能用。';
+      }
+      apply();
+    });
   });
 
-  /* 从工具页面包屑带 #cat-xxx 回来时定位分类 */
-  const m = location.hash.match(/^#cat-([\w-]+)$/);
-  if (m) activeCat = m[1];
+  document.querySelectorAll('.cat-chip[data-cat]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activeCat = btn.getAttribute('data-cat');
+      document.querySelectorAll('.cat-chip[data-cat]').forEach(function (x) { x.classList.toggle('on', x === btn); });
+      apply();
+    });
+  });
+
+  document.querySelectorAll('[data-reset]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      q.value = ''; activeDev = 'all'; activeCat = 'all';
+      document.querySelectorAll('.dev-seg [data-dev]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-dev') === 'all'); });
+      document.querySelectorAll('.cat-chip[data-cat]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-cat') === 'all'); });
+      apply();
+      q.focus();
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    e.preventDefault(); q.focus();
+  });
+
   apply();
 })();

@@ -1,6 +1,7 @@
-// 首页：服务端一次性输出 286 个工具与 10 个分类的静态链接，客户端只做筛选与计数。
-// DOM 契约（#grid .card / data-d / data-c / data-search）保持不变，app.js 不依赖具体视觉结构。
+// 首页：图标驱动的快捷入口 + 真实实时数据 + 热度榜 + 分类宫格 + 全部工具索引。
+// 服务端一次性输出 286 个工具与 10 个分类的静态链接，客户端只做筛选与计数。
 import { TOOLS, CATS, DEVS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
+import { catTheme } from '../data/theme.mjs';
 import { svg, esc } from './layout.mjs';
 import { cleanDesc } from './seo.mjs';
 
@@ -24,26 +25,43 @@ function catRail() {
 }
 
 function card(t) {
+  const th = catTheme(t.cat);
   const searchable = [t.name, t.desc, t.tags.join(' '), CAT_MAP[t.cat]?.name, DEV_NAME[t.dev], MODE_NAME[t.mode]]
     .join(' ').toLowerCase();
-  const attrs = `data-d="${t.dev}" data-c="${t.cat}" data-search="${esc(searchable)}"`;
-  return `<a class="card" href="/tools/${t.id}/" ${attrs}>
-    <span class="card-head">
-      <span class="card-ic" aria-hidden="true">${esc(t.icon)}</span>
-      <b class="card-name">${esc(t.name)}</b>
-      <span class="card-arw">${svg('i-arw')}</span>
-    </span>
-    <span class="card-desc">${esc(cleanDesc(t.desc))}</span>
-    <span class="card-foot">
-      <span class="card-cat">${esc(CAT_MAP[t.cat]?.name || '工具')}</span>
-      <span class="dev-mark ${t.dev}">${DEV_NAME[t.dev]}</span>
-      <span class="badge ${MODE_CLASS[t.mode]}">${MODE_NAME[t.mode]}</span>
-    </span>
+  return `<a class="card" href="/tools/${t.id}/" data-d="${t.dev}" data-c="${t.cat}" data-search="${esc(searchable)}">
+    <span class="card-ic" style="--ic:${th.soft}" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
+    <span class="card-main"><b class="card-name">${esc(t.name)}</b><span class="card-desc">${esc(cleanDesc(t.desc))}</span></span>
+    <span class="card-foot"><span class="card-cat" style="color:${th.color}">${esc(CAT_MAP[t.cat]?.name || '工具')}</span><span class="badge ${MODE_CLASS[t.mode]}">${MODE_NAME[t.mode]}</span></span>
+    <span class="card-arw">${svg('i-arw')}</span>
   </a>`;
 }
 
-/* 分类按钮是 JS 筛选控件，爬虫点不了。这里给 10 个真实分类页一份静态链接，
-   让 /cat/<id>/ 能被发现，也把首页权重分给分类页。 */
+/* 首屏快捷入口：每个分类取一个代表工具，点图标直接进工具页。 */
+function quickTiles() {
+  return CATS.filter((c) => c.id !== 'all').slice(0, 8).map((c) => {
+    const t = TOOLS.find((x) => x.cat === c.id);
+    if (!t) return '';
+    const th = catTheme(c.id);
+    return `<a class="quick-tile" href="/tools/${t.id}/">
+      <span class="qt-ic" style="--ic:${th.soft};--icc:${th.color}" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
+      <b>${esc(t.name)}</b><small>${esc(c.name)}</small>
+    </a>`;
+  }).join('');
+}
+
+function categoryTiles() {
+  return CATS.filter((c) => c.id !== 'all').map((c) => {
+    const th = catTheme(c.id);
+    const n = TOOLS.filter((t) => t.cat === c.id).length;
+    return `<a class="cat-tile" href="/cat/${c.id}/" style="--cc:${th.color};--cs:${th.soft}">
+      <span class="ct-ic" aria-hidden="true">${esc(c.icon)}</span>
+      <span class="ct-txt"><b>${esc(c.name)}</b><small>${n} 个工具</small></span>
+      <span class="ct-arw">${svg('i-arw')}</span>
+    </a>`;
+  }).join('');
+}
+
+/* 分类按钮是 JS 筛选控件，爬虫点不了。这里给 10 个真实分类页一份静态链接。 */
 function catLinks() {
   const items = CATS.filter((c) => c.id !== 'all').map((c) => {
     const list = TOOLS.filter((t) => t.cat === c.id);
@@ -55,7 +73,7 @@ function catLinks() {
       <span class="sc-arw">${svg('i-arw')}</span>
     </a>`;
   }).join('\n');
-  return `<section class="dir" id="categories" aria-label="按分类浏览工具">
+  return `<section class="dir" id="cat-dir" aria-label="按分类浏览工具">
     <div class="sec-head"><div><h2>按分类浏览</h2><p>10 个分类，每类都有独立页面，方便查找和收藏。</p></div></div>
     <div class="dir-grid">${items}</div>
   </section>`;
@@ -71,8 +89,8 @@ function spec() {
         <p>工具名称、分类、描述都写在同一份注册表里。首页索引、分类页、工具页和站点地图都从这张表生成，加一个工具只需要加一行。</p></div>
       <div class="spec-card"><h3>每个工具都有独立网址</h3>
         <p>${TOOLS.length} 个工具各有自己的页面，打开就能用。没有「卡片能点、点进去只有说明」的空壳页；静态站承接不了的能力，会在工具页里写明边界。</p></div>
-      <div class="spec-card"><h3>数据留在你的设备上</h3>
-        <p>没有账号系统，没有上传接口，也没有访问埋点。图片和文本只在当前浏览器标签页里被读取，刷新或关闭页面后就不留痕迹。</p></div>
+      <div class="spec-card"><h3>统计只数次数，不碰内容</h3>
+        <p>实时在线、访问量与热度榜是匿名计数，只记录「打开了哪个工具」和一个随机会话标识，不采集你在工具里填的任何文字、图片或文件，也没有账号系统。</p></div>
     </div>
     <p class="spec-foot">实现方式　纯本地 ${modeCount('local')} 个 · 本地库 ${modeCount('vendor')} 个 · 离线精简 ${modeCount('lite')} 个　|　${MODE_DESC.local}${MODE_DESC.vendor}${MODE_DESC.lite}合计 ${TOOLS.length} 个，全部可用。</p>
   </details>`;
@@ -82,46 +100,77 @@ export function homeHTML() {
   return `
 <section class="hero">
   <div class="hero-eyebrow"><span class="eyebrow-dot"></span>免费 · 无需注册 · 文件不上传</div>
-  <h1>常用小工具，<br><span>一页就够了</span></h1>
-  <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按分类整理在这里。所有处理都在你的浏览器里完成，不用登录，文件不会上传到任何服务器。</p>
+  <h1>常用小工具，打开就能用</h1>
+  <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分好，全部在浏览器里跑。</p>
   <div class="hero-search">${svg('i-search')}
     <input id="q" type="search" placeholder="搜索工具名称或功能" autocomplete="off" aria-label="搜索工具">
     <kbd class="kbd">/</kbd>
     <button class="clear hidden" id="qClear" aria-label="清空">×</button>
   </div>
-  <div class="hero-stats">
-    <span><b>${TOOLS.length}</b> 个在线工具</span>
-    <span><b>0</b> 次文件上传</span>
-    <span><b>100%</b> 浏览器本地运行</span>
-  </div>
+  <div class="hero-tags"><span>大家常找：</span><a href="/tools/pdf-merge/">PDF 合并</a><a href="/tools/qrcode/">二维码</a><a href="/tools/timestamp/">时间戳</a><a href="/tools/mortgage/">房贷计算</a></div>
 </section>
 
-<section class="filters" aria-label="筛选工具">
-  <div class="filter-row">
-    <span class="filter-label">适用设备</span>
-    <div class="filter-main">${devSeg()}
-      <p class="dev-cap" id="devCap">标「两端」的工具在电脑和手机上都能用。</p></div>
+<section class="stat-strip" aria-label="站点实时数据">
+  <div class="stat-grid">
+    <div class="stat-card"><span class="stat-label"><i class="live-dot"></i>当前在线</span><b data-stat="online">…</b><small>人 · 45 秒内有活动</small></div>
+    <div class="stat-card"><span class="stat-label">历史访问人次</span><b data-stat="visits">…</b><small>次打开</small></div>
+    <div class="stat-card"><span class="stat-label">独立访客</span><b data-stat="visitors">…</b><small>个会话</small></div>
+    <div class="stat-card"><span class="stat-label">工具使用人数</span><b data-stat="tool_users">…</b><small>人用过工具</small></div>
   </div>
-  <div class="filter-row last">
-    <span class="filter-label">功能分类</span>
-    <div class="filter-main">${catRail()}</div>
-  </div>
+  <p class="stat-hint" data-stats-hint>正在连接实时数据…</p>
 </section>
 
-<div class="result-bar">
-  <span class="label" id="resultLabel"><b>全部工具</b> · 共 <b>${TOOLS.length}</b> 个</span>
-  <div class="legend">
-    <span><i class="lg-local"></i>纯本地 ${modeCount('local')}</span>
-    <span><i class="lg-vendor"></i>本地库 ${modeCount('vendor')}</span>
-    <span><i class="lg-lite"></i>离线精简 ${modeCount('lite')}</span>
-  </div>
-</div>
+<section class="quick" aria-label="常用工具快捷入口">
+  <div class="sec-head"><h2>常用工具</h2><span>点图标直接打开</span></div>
+  <div class="quick-grid">${quickTiles()}</div>
+</section>
 
-<div class="grid" id="grid">${TOOLS.map(card).join('\n')}</div>
-<div class="empty hidden" id="emptyState">${svg('i-empty')}
-  <p>没有找到匹配的工具</p><p class="empty-sub">换个关键词，或清空筛选条件看看全部工具</p>
-  <button type="button" data-reset="1">清空筛选</button>
-</div>
+<section class="recent-sec" aria-label="最近使用">
+  <div class="sec-head"><h2>最近用过</h2><span>只记在这台设备上</span></div>
+  <div class="recent-row" data-recent></div>
+</section>
+
+<section class="rank-sec" id="rank">
+  <div class="rank-main">
+    <div class="sec-head"><h2>工具热度榜</h2><span>按真实使用次数排名</span></div>
+    <div class="rank-list" data-rank><p class="rank-empty">正在读取真实使用数据…</p></div>
+  </div>
+  <aside class="rank-side">
+    <div class="side-card">
+      <span class="side-label">累计使用次数</span>
+      <b data-stat="uses">…</b>
+      <p>每次打开工具页计一次，同一会话重复打开不重复计数。榜单按累计次数实时排序。</p>
+    </div>
+    <div class="side-card soft">
+      <span class="side-label">${svg('i-shield')}隐私说明</span>
+      <p>统计只记录事件类型、工具编号和一个随机会话标识。你在工具里输入的内容不会被上传或保存。</p>
+    </div>
+  </aside>
+</section>
+
+<section class="cat-sec" id="categories" aria-label="工具分类">
+  <div class="sec-head"><h2>按分类找工具</h2><span>10 个分类 · ${TOOLS.length} 个工具</span></div>
+  <div class="cat-grid">${categoryTiles()}</div>
+</section>
+
+<section class="all-sec" id="all" aria-label="全部工具">
+  <div class="sec-head"><h2>全部工具</h2><span id="resultLabel"><b>共 ${TOOLS.length} 个</b></span></div>
+  <section class="filters" aria-label="筛选工具">
+    <div class="filter-row"><span class="filter-label">适用设备</span>
+      <div class="filter-main">${devSeg()}<p class="dev-cap" id="devCap">标「两端」的工具在电脑和手机上都能用。</p></div>
+    </div>
+    <div class="filter-row last"><span class="filter-label">功能分类</span><div class="filter-main">${catRail()}</div></div>
+  </section>
+  <div class="result-bar">
+    <span class="label" id="resultCount">显示 ${TOOLS.length} 个工具</span>
+    <div class="legend"><span><i class="lg-local"></i>纯本地 ${modeCount('local')}</span><span><i class="lg-vendor"></i>本地库 ${modeCount('vendor')}</span><span><i class="lg-lite"></i>离线精简 ${modeCount('lite')}</span></div>
+  </div>
+  <div class="grid" id="grid">${TOOLS.map(card).join('\n')}</div>
+  <div class="empty hidden" id="emptyState">${svg('i-empty')}
+    <p>没有找到匹配的工具</p><p class="empty-sub">换个关键词，或清空筛选条件看看全部工具</p>
+    <button type="button" data-reset="1">清空筛选</button>
+  </div>
+</section>
 
 ${catLinks()}
 ${spec()}
