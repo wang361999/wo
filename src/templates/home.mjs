@@ -1,5 +1,6 @@
-// 首页：图标驱动的快捷入口 + 真实实时数据 + 热度榜 + 分类宫格 + 全部工具索引。
+// 首页：「工具辞典」扉页 —— 卷次分区 / 检字表 / 词条式工具索引。
 // 服务端一次性输出全部工具与各分类的静态链接，客户端只做筛选与计数。
+// 所有 data-* 钩子与 .card/.cat-chip/.dev-seg 等选择器契约保持不变。
 import { TOOLS, CATS, DEVS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { catTheme } from '../data/theme.mjs';
 import { svg, esc } from './layout.mjs';
@@ -11,6 +12,25 @@ const catCount = (c, d) => TOOLS.filter((t) => inDev(t, d) && (c === 'all' || t.
 const modeCount = (m) => TOOLS.filter((t) => t.mode === m).length;
 
 const MODE_CLASS = { local: 'm-local', vendor: 'm-vendor', lite: 'm-lite', api: 'm-api' };
+
+/* 阿拉伯数字转中文数字，只用到千位，扉页大字用。 */
+const CN_D = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+function cnNum(n) {
+  if (n <= 0) return '零';
+  const units = [[1e3, '千'], [1e2, '百'], [10, '十']];
+  let out = '', rest = n;
+  for (const [u, name] of units) {
+    const d = Math.floor(rest / u);
+    if (d > 0) {
+      out += (d > 1 || !out ? CN_D[d] : '') + name;
+      rest %= u;
+    } else if (out && rest >= u / 10) {
+      out += '零';
+    }
+  }
+  if (rest > 0) out += CN_D[rest];
+  return out || '零';
+}
 
 function devSeg() {
   return `<div class="dev-seg" role="group" aria-label="按设备端筛选">${DEVS.map((d) =>
@@ -24,11 +44,12 @@ function catRail() {
   ).join('')}</div>`;
 }
 
-function card(t) {
+/* 词条卡：编号 + 部首（分类图标）+ 【名称】 + 释义。 */
+function card(t, i) {
   const th = catTheme(t.cat);
   const searchable = [t.name, t.desc, t.tags.join(' '), CAT_MAP[t.cat]?.name, DEV_NAME[t.dev], MODE_NAME[t.mode]]
     .join(' ').toLowerCase();
-  return `<a class="card" href="/tools/${t.id}/" data-d="${t.dev}" data-c="${t.cat}" data-search="${esc(searchable)}">
+  return `<a class="card" href="/tools/${t.id}/" data-d="${t.dev}" data-c="${t.cat}" data-search="${esc(searchable)}" data-no="${String(i + 1).padStart(4, '0')}">
     <span class="card-ic" style="--ic:${th.soft}" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
     <span class="card-main"><b class="card-name">${esc(t.name)}</b><span class="card-desc">${esc(cleanDesc(t.desc))}</span></span>
     <span class="card-foot"><span class="card-cat" style="color:${th.color}">${esc(CAT_MAP[t.cat]?.name || '工具')}</span><span class="badge ${MODE_CLASS[t.mode]}">${MODE_NAME[t.mode]}</span></span>
@@ -36,34 +57,27 @@ function card(t) {
   </a>`;
 }
 
-/* 首屏快捷入口：每个分类取一个代表工具，点图标直接进工具页。 */
+/* 卷一：常用工具 —— 每个分类取一个代表工具。 */
 function quickTiles() {
   return CATS.filter((c) => c.id !== 'all').slice(0, 8).map((c) => {
     const t = TOOLS.find((x) => x.cat === c.id);
     if (!t) return '';
     const th = catTheme(c.id);
     return `<a class="quick-tile" href="/tools/${t.id}/">
-      <span class="qt-ic" style="--ic:${th.soft};--icc:${th.color}" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
+      <span class="qt-ic" style="--ic:${th.soft}" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
       <b>${esc(t.name)}</b><small>${esc(c.name)}</small>
     </a>`;
   }).join('');
 }
 
-/* Hero 右侧的格子装饰：取前几个分类的图标排成错落的小方格，呼应品牌标志。 */
-function heroSide() {
-  return CATS.filter((c) => c.id !== 'all').slice(0, 9).map((c) => {
-    const th = catTheme(c.id);
-    return `<span class="hs-tile" style="--ic:${th.soft}" aria-hidden="true">${esc(c.icon)}</span>`;
-  }).join('');
-}
-
+/* 卷四：分类检字表。 */
 function categoryTiles() {
   return CATS.filter((c) => c.id !== 'all').map((c) => {
     const th = catTheme(c.id);
     const n = TOOLS.filter((t) => t.cat === c.id).length;
     return `<a class="cat-tile" href="/cat/${c.id}/" style="--cc:${th.color};--cs:${th.soft}">
       <span class="ct-ic" aria-hidden="true">${esc(c.icon)}</span>
-      <span class="ct-txt"><b>${esc(c.name)}</b><small>${n} 个工具</small></span>
+      <span class="ct-txt"><b>${esc(c.name)}</b><small>${n} 器</small></span>
       <span class="ct-arw">${svg('i-arw')}</span>
     </a>`;
   }).join('');
@@ -82,16 +96,16 @@ function catLinks() {
     </a>`;
   }).join('\n');
   return `<section class="dir" id="cat-dir" aria-label="按分类浏览工具">
-    <div class="sec-head"><div><h2>按分类浏览</h2><p>${CATS.filter(c=>c.id!=='all').length} 个分类，每类都有独立页面，方便查找和收藏。</p></div></div>
+    <div class="sec-head"><div><h2>分类总目</h2><p>${CATS.filter(c=>c.id!=='all').length} 个分类，每类都有独立页面，方便查找和收藏。</p></div></div>
     <div class="dir-grid">${items}</div>
   </section>`;
 }
 
 function spec() {
   return `<details class="spec">
-    <summary><span>关于本站</span><span class="sm-plus">＋</span></summary>
+    <summary><span>凡例 · 关于本站</span><span class="sm-plus">＋</span></summary>
     <div class="spec-body">
-      <div class="spec-card"><h3>两级筛选</h3>
+      <div class="spec-card"><h3>两级检索</h3>
         <p>先按<b>设备端</b>缩小范围，再按<b>功能分类</b>查找。选中设备端后，分类后面的数字会跟着变，不用在两个列表里来回试。</p></div>
       <div class="spec-card"><h3>一张注册表管全部</h3>
         <p>工具名称、分类、描述都写在同一份注册表里。首页索引、分类页、工具页和站点地图都从这张表生成，加一个工具只需要加一行。</p></div>
@@ -110,17 +124,20 @@ export function homeHTML() {
   return `
 <section class="hero">
   <div class="hero-copy">
-    <div class="hero-eyebrow"><span class="eyebrow-dot"></span>免费 · 无需注册 · 文件不上传</div>
-    <h1>常用小工具，打开就能用</h1>
-    <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分好，绝大多数在浏览器本地跑，实时数据类经本站接口取数。</p>
+    <div class="hero-eyebrow">免费在线 · 无需注册 · 文件不上传</div>
+    <h1><span class="red">${cnNum(TOOLS.length)}</span>件工具<br>一页尽收，随手可用</h1>
+    <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分卷编目，绝大多数在浏览器本地运行，实时数据类经本站接口取数。查工具，像查一部辞典。</p>
     <div class="hero-search">${svg('i-search')}
-      <input id="q" type="search" placeholder="搜索工具名称或功能" autocomplete="off" aria-label="搜索工具">
+      <input id="q" type="search" placeholder="检索工具名称或功能" autocomplete="off" aria-label="搜索工具">
       <kbd class="kbd">/</kbd>
       <button class="clear hidden" id="qClear" aria-label="清空">×</button>
     </div>
-    <div class="hero-tags"><span>大家常找：</span><a href="/tools/pdf-merge/">PDF 合并</a><a href="/tools/qrcode/">二维码</a><a href="/tools/timestamp/">时间戳</a><a href="/tools/mortgage/">房贷计算</a></div>
+    <div class="hero-tags"><span>常检：</span><a href="/tools/pdf-merge/">PDF 合并</a><a href="/tools/qrcode/">二维码</a><a href="/tools/timestamp/">时间戳</a><a href="/tools/mortgage/">房贷计算</a></div>
   </div>
-  <div class="hero-side" aria-hidden="true">${heroSide()}</div>
+  <div class="hero-side" aria-hidden="true">
+    <span class="hero-vert"><b>一頁工具</b>　打開即用</span>
+    <span class="hero-seal">${svg('i-seal')}</span>
+  </div>
 </section>
 
 <section class="stat-strip" aria-label="站点实时数据">
@@ -134,12 +151,12 @@ export function homeHTML() {
 </section>
 
 <section class="quick" aria-label="常用工具快捷入口">
-  <div class="sec-head"><h2><span class="sec-no">01</span>常用工具</h2><span>点图标直接打开</span></div>
+  <div class="sec-head"><h2><span class="sec-no">卷一</span>常用工具</h2><span>点部首直接翻到</span></div>
   <div class="quick-grid">${quickTiles()}</div>
 </section>
 
 <section class="recent-sec" aria-label="最近使用与收藏">
-  <div class="sec-head"><h2><span class="sec-no">02</span>我的工具</h2><button type="button" class="sync-open" data-sync-open>跨设备同步</button></div>
+  <div class="sec-head"><h2><span class="sec-no">卷二</span>我的工具</h2><button type="button" class="sync-open" data-sync-open>跨设备同步</button></div>
   <div class="recent-label">我的收藏</div>
   <div class="recent-row" data-fav></div>
   <div class="recent-label">最近用过</div>
@@ -162,7 +179,7 @@ export function homeHTML() {
 
 <section class="rank-sec" id="rank">
   <div class="rank-main">
-    <div class="sec-head"><h2><span class="sec-no">03</span>工具热度榜</h2><span>按真实使用次数排名</span></div>
+    <div class="sec-head"><h2><span class="sec-no">卷三</span>使用热度</h2><span>按真实使用次数朱批排名</span></div>
     <div class="rank-list" data-rank><p class="rank-empty">正在读取真实使用数据…</p></div>
   </div>
   <aside class="rank-side">
@@ -179,12 +196,12 @@ export function homeHTML() {
 </section>
 
 <section class="cat-sec" id="categories" aria-label="工具分类">
-  <div class="sec-head"><h2><span class="sec-no">04</span>按分类找工具</h2><span>${CATS.filter(c=>c.id!=='all').length} 个分类 · ${TOOLS.length} 个工具</span></div>
+  <div class="sec-head"><h2><span class="sec-no">卷四</span>分类检字表</h2><span>${CATS.filter(c=>c.id!=='all').length} 部 · ${TOOLS.length} 器</span></div>
   <div class="cat-grid">${categoryTiles()}</div>
 </section>
 
 <section class="all-sec" id="all" aria-label="全部工具">
-  <div class="sec-head"><h2><span class="sec-no">05</span>全部工具</h2><span id="resultLabel"><b>共 ${TOOLS.length} 个</b></span></div>
+  <div class="sec-head"><h2><span class="sec-no">卷五</span>全部工具</h2><span id="resultLabel"><b>共 ${TOOLS.length} 条</b></span></div>
   <section class="filters" aria-label="筛选工具">
     <div class="filter-row"><span class="filter-label">适用设备</span>
       <div class="filter-main">${devSeg()}<p class="dev-cap" id="devCap">标「两端」的工具在电脑和手机上都能用。</p></div>
@@ -192,12 +209,12 @@ export function homeHTML() {
     <div class="filter-row last"><span class="filter-label">功能分类</span><div class="filter-main">${catRail()}</div></div>
   </section>
   <div class="result-bar">
-    <span class="label" id="resultCount">显示 ${TOOLS.length} 个工具</span>
+    <span class="label" id="resultCount">显示 ${TOOLS.length} 条词条</span>
     <div class="legend"><span><i class="lg-local"></i>纯本地 ${modeCount('local')}</span><span><i class="lg-vendor"></i>本地库 ${modeCount('vendor')}</span><span><i class="lg-lite"></i>离线精简 ${modeCount('lite')}</span></div>
   </div>
   <div class="grid" id="grid">${TOOLS.map(card).join('\n')}</div>
   <div class="empty hidden" id="emptyState">${svg('i-empty')}
-    <p>没有找到匹配的工具</p><p class="empty-sub">换个关键词，或清空筛选条件看看全部工具</p>
+    <p>查无此条</p><p class="empty-sub">换个关键词，或清空筛选条件看看全部工具</p>
     <button type="button" data-reset="1">清空筛选</button>
   </div>
 </section>

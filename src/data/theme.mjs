@@ -1,21 +1,21 @@
-// 分类视觉主题：工具图标宫格、热度榜、分类入口共用同一套颜色。
-// color 用于描边/进度条/强调，soft 用于图标底色，emoji 作为工具图标。
-// 色板与全站「工程手册」风一致：暖底色上的降饱和强调色。
+// 分类视觉主题：工具词条宫格、热度榜、分类检字表共用同一套颜色。
+// color 用于强调/进度条，soft 用于部首底色，emoji 作为工具图标。
+// 色板取传统矿彩：朱砂、赭石、石青、藤黄、松绿……压低饱和落在纸色上。
 export const CAT_THEME = {
-  all:      { color: '#2a45c4', soft: '#eaedf9', emoji: '🗂️' },
-  nav:      { color: '#3d66d8', soft: '#e9effc', emoji: '🧭' },
-  pdf:      { color: '#c4463b', soft: '#faecea', emoji: '📄' },
-  image:    { color: '#7b57cd', soft: '#f0ebfa', emoji: '🖼️' },
-  media:    { color: '#c5447e', soft: '#fae9f1', emoji: '🎬' },
-  dev:      { color: '#4a44c6', soft: '#ebeafb', emoji: '🔧' },
-  chinese:  { color: '#b5790f', soft: '#f9efdb', emoji: '🀄' },
-  life:     { color: '#13855f', soft: '#e4f3ec', emoji: '🧮' },
-  finance:  { color: '#0d82a2', soft: '#e2f2f7', emoji: '💰' },
-  css:      { color: '#c93f65', soft: '#fae9ee', emoji: '🎨' },
-  puzzle:   { color: '#ae7d0d', soft: '#f9f2d8', emoji: '🧩' },
-  math:     { color: '#6d51c5', soft: '#f0ecfa', emoji: '📐' },
-  health:   { color: '#13855f', soft: '#e4f3ec', emoji: '🩺' },
-  web:      { color: '#2a5cc9', soft: '#e8eefb', emoji: '🌐' },
+  all:      { color: '#b03528', soft: '#f1e7d6', emoji: '🗂️' },
+  nav:      { color: '#46609c', soft: '#e8eaf2', emoji: '🧭' },
+  pdf:      { color: '#a4472f', soft: '#f2e3dc', emoji: '📄' },
+  image:    { color: '#7a4a75', soft: '#efe6ee', emoji: '🖼️' },
+  media:    { color: '#a83e5e', soft: '#f3e3e7', emoji: '🎬' },
+  dev:      { color: '#40558c', soft: '#e7eaf4', emoji: '🔧' },
+  chinese:  { color: '#8a6a2f', soft: '#f2ead7', emoji: '🀄' },
+  life:     { color: '#4f7a45', soft: '#e9efdf', emoji: '🧮' },
+  finance:  { color: '#3f7d72', soft: '#e3efec', emoji: '💰' },
+  css:      { color: '#b04a55', soft: '#f4e4e5', emoji: '🎨' },
+  puzzle:   { color: '#b3862e', soft: '#f5ecd6', emoji: '🧩' },
+  math:     { color: '#6e5a96', soft: '#ece8f3', emoji: '📐' },
+  health:   { color: '#5b7d3e', soft: '#eaefdd', emoji: '🩺' },
+  web:      { color: '#2e6b8e', soft: '#e2edf3', emoji: '🌐' },
 };
 
 export function catTheme(id) {

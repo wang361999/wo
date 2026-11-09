@@ -118,25 +118,29 @@ fs.writeFileSync(path.join(DIST, '404.html'), `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,follow">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#f4efe1">
 <meta name="color-scheme" content="light">
-<title>页面没找到 · ${SITE_NAME}</title>
+<title>查无此页 · ${SITE_NAME}</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css"></head>
 <body>
 <header class="site-head"><div class="wrap head-in">
-  <a class="brand" href="/"><span class="brand-mark"><svg><use href="#i-logo"/></svg></span>
+  <a class="brand" href="/"><span class="brand-mark"><svg><use href="#i-seal"/></svg></span>
   <span class="brand-txt">${SITE_NAME}<small>${SITE_TAGLINE}</small></span></a>
 </div></header>
 <main class="wrap"><section class="hero">
   <div class="hero-copy">
-  <div class="hero-eyebrow"><span class="eyebrow-dot"></span>404 · 页面不存在</div>
-  <h1>这个页面不在这里</h1>
-  <p class="hero-lede">链接可能已经失效。回首页看看全部 ${TOOLS.length} 个工具，或者直接用搜索找。</p>
-  <p style="margin-top:0"><a class="home-cta" href="/">回到首页</a></p>
+  <div class="hero-eyebrow">404 · 查无此页</div>
+  <h1><span class="red">查无</span>此页</h1>
+  <p class="hero-lede">本辞典未收录这一页，链接可能已经失效。回总目看全部 ${TOOLS.length} 个工具，或换个词条检索。</p>
+  <p style="margin-top:26px"><a class="home-cta" href="/">回到总目</a></p>
+  </div>
+  <div class="hero-side" aria-hidden="true">
+    <span class="hero-vert"><b>查無此頁</b>　另檢他條</span>
+    <span class="hero-seal"><svg><use href="#i-seal"/></svg></span>
   </div>
 </section></main>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.2" y="3.2" width="7.2" height="7.2" rx="1.6"/><rect x="13.6" y="3.2" width="7.2" height="7.2" rx="1.6"/><rect x="3.2" y="13.6" width="7.2" height="7.2" rx="1.6"/><rect x="13.6" y="13.6" width="7.2" height="7.2" rx="1.6" fill="currentColor" stroke="none"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-seal" viewBox="0 0 24 24"><rect width="24" height="24" fill="#b03528"/><path d="M12 0v24M0 12h24" stroke="#fdf8ec" stroke-width="1.3"/><rect x="3.5" y="3.5" width="5" height="5" fill="#fdf8ec"/><rect x="15.5" y="3.5" width="5" height="5" fill="#fdf8ec"/><rect x="3.5" y="15.5" width="5" height="5" fill="#fdf8ec"/></symbol></svg>
 </body></html>`);
 
 // sitemap：只写 loc。旧版 287 条 lastmod 全用构建当天，等于每次发版都宣称全站改过，

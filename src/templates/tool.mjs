@@ -1,5 +1,5 @@
-// 工具页：静态正文 + 工具工作台 + 真实使用数据 + 热度榜。交互模块由 /tool.js 挂进 #tool-root。
-// 所有 SEO 内容（面包屑、正文、FAQ、同类内链、分类链接）保持完整。
+// 工具页：词条式头卡（【工具名】+ 朱印档位章）+ 操作台 + 真实使用数据 + 热度榜。
+// 交互模块由 /tool.js 挂进 #tool-root。所有 SEO 内容与 data-* 钩子保持完整。
 import { TOOLS, CATS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { catTheme } from '../data/theme.mjs';
 import { svg, esc, SITE_NAME } from './layout.mjs';
@@ -76,7 +76,7 @@ export function toolHTML(t) {
     .map((c) => `<a href="/cat/${c.id}/">${esc(c.name)}</a>`).join('');
 
   return `
-<nav class="crumb"><a href="/">首页</a><span class="sep">/</span>
+<nav class="crumb"><a href="/">总目</a><span class="sep">/</span>
   <a href="/cat/${t.cat}/">${esc(cat.name)}</a><span class="sep">/</span><span>${esc(t.name)}</span></nav>
 
 <header class="tool-head" style="--cc:${th.color};--cs:${th.soft}">
@@ -92,6 +92,7 @@ export function toolHTML(t) {
       <button type="button" class="fav-btn" data-fav-btn aria-pressed="false">☆ 收藏</button>
     </div>
   </div>
+  <span class="mode-stamp" aria-hidden="true">${isApi ? '在线' : '本地'}</span>
 </header>
 
 <div class="tool-metrics">
@@ -102,7 +103,7 @@ export function toolHTML(t) {
 
 <section class="workbench" aria-label="${esc(t.name)} 工具区">
   <div class="wb-bar">
-    <span class="wb-title">${svg('i-grid')}工具</span>
+    <span class="wb-title">${svg('i-grid')}操作台</span>
     <span class="wb-status">${svg('i-shield')}${isApi ? '查询经本站同源接口' : '在浏览器本地运行'}</span>
   </div>
   <div class="wb-body">
@@ -146,10 +147,10 @@ export function toolHTML(t) {
   </section>
 
   <aside class="side-col">
-    <section class="side-rank"><div class="sec-head"><h2>工具热度榜</h2><span>实时</span></div>
+    <section class="side-rank"><div class="sec-head"><h2>使用热度</h2><span>实时</span></div>
       <div class="rank-list" data-rank><p class="rank-empty">正在读取真实使用数据…</p></div>
     </section>
-    <section class="related"><div class="sec-head"><h2>同类工具</h2></div>
+    <section class="related"><div class="sec-head"><h2>同类词条</h2></div>
       <div class="related-grid">${related.map((r) => {
         const rt = catTheme(r.cat);
         return `<a class="mini" href="/tools/${r.id}/">
@@ -159,12 +160,12 @@ export function toolHTML(t) {
       }).join('')}</div>
       <p class="related-more"><a href="/cat/${t.cat}/">查看${esc(cat.name)}全部工具 →</a></p>
     </section>
-    <section class="cat-jump"><h2>换个分类</h2><nav class="cat-jump-links" aria-label="其它分类">${others}</nav></section>
+    <section class="cat-jump"><h2>换一卷</h2><nav class="cat-jump-links" aria-label="其它分类">${others}</nav></section>
   </aside>
 </div>
 
 <div class="mobile-actions" aria-label="快捷操作">
-  <a href="/">${svg('i-home')}<span>首页</span></a>
+  <a href="/">${svg('i-home')}<span>总目</span></a>
   <button type="button" data-share="1">${svg('i-share')}<span>分享</span></button>
   <button type="button" data-scrolltop="1">${svg('i-top')}<span>顶部</span></button>
 </div>
