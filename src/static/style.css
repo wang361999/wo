@@ -119,7 +119,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 /* ===== 卷一：常用工具（部首式宫格） ===== */
 .quick,.recent-sec{margin-top:26px;background:var(--surface);border:1px solid var(--line);
   padding:20px 22px;box-shadow:var(--shadow)}
-.quick-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.quick-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .quick-tile{display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 4px;
   border:1px solid transparent;text-align:center;min-width:0}
 .quick-tile:hover{background:var(--surface-2);border-color:var(--line)}
@@ -832,3 +832,34 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* ===== PWA：装到桌面（页脚一行，不弹窗） ===== */
+.pwa-install{font:11.5px var(--mono);letter-spacing:.02em;color:var(--ink-2);
+  background:transparent;border:1px solid var(--line);padding:6px 11px;white-space:nowrap;
+  transition:color .15s,border-color .15s}
+.pwa-install:hover{color:var(--accent);border-color:var(--accent)}
+.pwa-note{font:11px var(--mono);color:var(--ink-3);cursor:pointer;max-width:300px;line-height:1.5}
+.pwa-install[hidden],.pwa-note[hidden]{display:none}
+@media(max-width:640px){.pwa-note{display:none}}
+
+/* ===== 工作台：记住输入 / 快捷键 ===== */
+.t-panel .t-head .hint{margin-left:auto}
+.t-remember{align-self:baseline;flex:none;font:11px var(--mono);color:var(--ink-3);
+  background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;
+  white-space:nowrap;cursor:pointer}
+.t-remember:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.t-remember[aria-pressed="true"]{color:var(--accent);border-bottom-style:solid;border-bottom-color:var(--accent)}
+.t-remember[aria-pressed="true"]::before{content:"■ ";font-size:9px}
+.t-kbd{font:10px var(--mono);color:var(--ink-3);border:1px solid var(--line);padding:1px 4px;margin-left:5px;white-space:nowrap}
+.wb-status .t-kbd{margin-left:8px}
+@media(max-width:640px){.t-kbd,.wb-status .t-kbd{display:none}}
+
+/* ===== 卷一：常检标记 ===== */
+.quick-tile{position:relative}
+.quick-tile[data-fq]::after{content:"常";position:absolute;top:0;right:0;
+  font:9px var(--serif);line-height:1.5;color:#fff;background:var(--accent);padding:0 3px}
+
+/* ===== 健康类：边界说明 ===== */
+.shell-caution{margin:0 0 12px;padding:9px 13px;border-left:3px solid var(--accent);
+  background:var(--accent-soft);font-size:12.5px;line-height:1.75;color:var(--ink-2)}
+.shell-caution b{color:var(--accent)}

@@ -10,6 +10,15 @@
     if (typeof mod.default !== 'function') throw new Error('模块没有导出 mount 函数');
     await mod.default(root);
 
+    // formTool 自己处理 Ctrl/⌘+Enter（复制结果）；自定义工具没有统一结果对象，
+    // 这里兜底成「点一下主按钮」，免得一半工具快捷键失灵。
+    root.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== 'Enter') return;
+      if (root.querySelector('[data-copy]')) return;
+      const btn = root.querySelector('.t-btn.primary, [data-gaction], [data-run], .t-btn');
+      if (btn) { e.preventDefault(); btn.click(); }
+    });
+
     if (window.__OP_STATS__ && window.__OP_STATS__.remember) window.__OP_STATS__.remember(id);
 
     // formTool 的输入面板默认写「内容只在本机处理」，在线数据档要改成如实说明

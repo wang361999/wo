@@ -92,9 +92,19 @@ function fieldHTML(f) {
 export function formTool(spec) {
   return function mount(root) {
     const wide = spec.wide === true;
+    const toolId = (document.getElementById('tool-root') || {}).dataset?.tool
+      || (location.pathname.match(/^\/tools\/([^/]+)/) || [])[1] || '';
+    const MEM_KEY = 'wb:form:' + toolId;
+    /* 隐私优先：默认不存任何输入。用户点了「记住输入」才写 localStorage，
+       且密码 / 密钥 / 证件号这类字段无论开关状态都排除，文件选择框也不在 fields 里。 */
+    const SAFE_FIELDS = (spec.fields || []).filter((f) =>
+      !/pass|secret|token|private|credential|apikey|口令|密钥|密码|私钥|身份证|手机号/i
+        .test(String(f.id) + ' ' + String(f.label || '')));
+    let rememberOn = false;
+    try { rememberOn = !!toolId && !!localStorage.getItem(MEM_KEY); } catch (e) {}
     root.innerHTML = `<div class="t-work">
       <section class="t-panel ${wide ? 'wide' : ''}">
-        <div class="t-head"><h2><span class="step">1</span>${esc(spec.titleIn || '输入')}</h2><span class="hint">内容只在本机处理</span></div>
+        <div class="t-head"><h2><span class="step">1</span>${esc(spec.titleIn || '输入')}</h2><span class="hint">内容只在本机处理</span>${SAFE_FIELDS.length ? '<button type="button" class="t-remember" data-remember aria-pressed="false" title="只存这台设备，不上传">记住输入</button>' : ''}</div>
         ${(spec.fields || []).map(fieldHTML).join('')}
         ${spec.sample ? '<div class="t-actions"><button type="button" class="t-btn" data-sample="1">填个示例</button><button type="button" class="t-btn" data-clear="1">清空</button></div>' : ''}
         ${spec.extraHTML || ''}
@@ -107,6 +117,7 @@ export function formTool(spec) {
         <p class="t-err" data-err style="display:none"></p>
         <div class="t-actions">
           <button type="button" class="t-btn primary" data-copy="1">${esc(spec.primary || '复制结果')}</button>
+          <button type="button" class="t-btn" data-download="1">存为文件</button>
           ${(spec.actions || []).map((a, i) => `<button type="button" class="t-btn" data-action="${i}">${esc(a.label)}</button>`).join('')}
         </div>
         ${spec.hintOut ? `<p class="t-hint">${esc(spec.hintOut)}</p>` : ''}
@@ -131,6 +142,43 @@ export function formTool(spec) {
     };
 
     let lastCopy = '';
+    const fieldEl = (id) => root.querySelector(`[data-fid="${id}"]`);
+    function restore() {
+      if (!rememberOn || !toolId) return false;
+      try {
+        const saved = JSON.parse(localStorage.getItem(MEM_KEY) || '{}');
+        if (!saved || saved.__v !== 1) return false;
+        let n = 0;
+        SAFE_FIELDS.forEach((f) => {
+          if (!(f.id in saved)) return;
+          const el = fieldEl(f.id);
+          if (el) {
+            if (f.type === 'checkbox') el.checked = !!saved[f.id];
+            else el.value = String(saved[f.id] ?? '');
+            n++; return;
+          }
+          const chips = $(`[data-chips="${f.id}"]`, root);
+          if (chips) { $$('.t-chip', chips).forEach((x) => x.classList.toggle('on', x.dataset.val === String(saved[f.id]))); n++; }
+        });
+        return n > 0;
+      } catch (e) { return false; }
+    }
+    function save() {
+      if (!rememberOn || !toolId) return;
+      try {
+        const v = values(), o = { __v: 1 };
+        SAFE_FIELDS.forEach((f) => { if (v[f.id] != null && typeof v[f.id] !== 'object') o[f.id] = v[f.id]; });
+        const str = JSON.stringify(o);
+        if (str.length <= 20000) localStorage.setItem(MEM_KEY, str);
+      } catch (e) {}
+    }
+    let saveTimer = 0;
+    const scheduleSave = () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); };
+    const remBtn = $('[data-remember]', root);
+    if (remBtn) {
+      remBtn.setAttribute('aria-pressed', String(rememberOn));
+      remBtn.textContent = rememberOn ? '已记住 · 清除' : '记住输入';
+    }
     const ctx = {
       root, values, $, $$,
       setOut(x) { if (typeof x === 'string') { outEl.className = 't-out'; outEl.textContent = x; } else { outEl.className = 't-out html'; outEl.innerHTML = x.html || ''; } },
@@ -162,6 +210,7 @@ export function formTool(spec) {
       else { outEl.className = 't-out'; outEl.textContent = r.text ?? ''; }
       ctx.setPreview(r.preview || '');
       lastCopy = r.copy ?? (r.text ?? '');
+      scheduleSave();
     }
 
     root.addEventListener('input', run);
@@ -173,6 +222,21 @@ export function formTool(spec) {
         run(); return;
       }
       if (e.target.closest('[data-copy]')) { copy(lastCopy); return; }
+      if (e.target.closest('[data-download]')) {
+        const text = String(lastCopy ?? '');
+        if (!text) { toast('还没有可保存的结果'); return; }
+        download('一页工具-' + (toolId || '结果') + '-' + Date.now() + '.txt', text, 'text/plain;charset=utf-8');
+        toast('已保存为文本文件'); return;
+      }
+      const rem = e.target.closest('[data-remember]');
+      if (rem) {
+        rememberOn = !rememberOn;
+        try { if (rememberOn) save(); else localStorage.removeItem(MEM_KEY); } catch (err) {}
+        rem.setAttribute('aria-pressed', String(rememberOn));
+        rem.textContent = rememberOn ? '已记住 · 清除' : '记住输入';
+        toast(rememberOn ? '输入只留在这台设备，不会上传' : '已清除本机保存的输入');
+        return;
+      }
       if (e.target.closest('[data-sample]')) {
         Object.entries(spec.sample || {}).forEach(([k, val]) => {
           const el = $(`#f-${k}`, root);
@@ -190,9 +254,13 @@ export function formTool(spec) {
       if (act) { const a = spec.actions[Number(act.dataset.action)]; if (a && a.run) a.run(values(), ctx); }
     });
 
+    root.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); copy(lastCopy); }
+    });
     root.addEventListener('regenerate', run);
     if (spec.setAction) setAction(spec.setAction.label, () => spec.setAction.run(values(), ctx));
     else setAction(spec.primary || '复制结果', () => copy(lastCopy));  // 手机端统一吸底操作
+    if (restore()) toast('已恢复上次输入');
     run();
     return ctx;
   };

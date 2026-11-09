@@ -77,6 +77,11 @@ export function layout({ title, desc = '', body, isTool = false, canonical, site
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(canonical)}">${og}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="${esc(SITE_NAME)}">
 <link rel="stylesheet" href="/style.css">${ld}
 </head>
 <body${mode ? ` data-mode="${esc(mode)}"` : ''}>
@@ -126,7 +131,7 @@ ${SYMBOLS}
     <span class="brand-mark sm">${svg('i-seal')}</span>
     <span><b>${SITE_NAME} · 谨制</b><small>${TOOLS.length} 个免费在线工具 · 绝大多数纯本地运行</small></span>
   </div>
-  <span class="foot-meta">文件不上传 · 输入内容不采集 · 统计匿名去重</span>
+  <span class="foot-meta">文件不上传 · 输入不经服务器 · 统计匿名去重</span>
   <a href="/" class="foot-top">回到总目 ${svg('i-up')}</a>
 </div></footer>
 
@@ -142,6 +147,7 @@ ${SYMBOLS}
 <script src="/sync.js"></script>
 <script src="/links.js"></script>
 <script src="/ui.js"></script>
+<script src="/pwa.js"></script>
 ${js}
 </body>
 </html>`;

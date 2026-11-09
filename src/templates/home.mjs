@@ -57,15 +57,24 @@ function card(t, i) {
   </a>`;
 }
 
-/* 卷一：常用工具 —— 每个分类取一个代表工具。 */
+/* 卷一：反复会用的十二件。按「会不会再来第二次」挑，不按分类平均分配。
+   写死 id 而不是取实时榜首，是为了让新站没有统计数据时首页也不空、不乱跳。 */
+const FREQUENT = [
+  'image-compress', 'pdf-merge', 'qrcode', 'timestamp',
+  'json', 'url-encode', 'base64', 'image-resize',
+  'pdf-compress', 'hash', 'wordcount', 'currency',
+];
+const FREQ_TOOLS = FREQUENT.map((id) => {
+  const t = TOOLS.find((x) => x.id === id);
+  if (!t) throw new Error(`首页常检清单里的工具不存在：${id}`);
+  return t;
+});
 function quickTiles() {
-  return CATS.filter((c) => c.id !== 'all').slice(0, 8).map((c) => {
-    const t = TOOLS.find((x) => x.cat === c.id);
-    if (!t) return '';
-    const th = catTheme(c.id);
-    return `<a class="quick-tile" href="/tools/${t.id}/">
+  return FREQ_TOOLS.map((t) => {
+    const th = catTheme(t.cat);
+    return `<a class="quick-tile" data-fq href="/tools/${t.id}/">
       <span class="qt-ic" style="--ic:${th.soft}" aria-hidden="true">${esc(t.icon || th.emoji)}</span>
-      <b>${esc(t.name)}</b><small>${esc(c.name)}</small>
+      <b>${esc(t.name)}</b><small>${esc(CAT_MAP[t.cat]?.name || '')}</small>
     </a>`;
   }).join('');
 }
@@ -151,7 +160,7 @@ export function homeHTML() {
 </section>
 
 <section class="quick" aria-label="常用工具快捷入口">
-  <div class="sec-head"><h2><span class="sec-no">卷一</span>常用工具</h2><span>点部首直接翻到</span></div>
+  <div class="sec-head"><h2><span class="sec-no">卷一</span>常检</h2><span>反复会用的十二件 · 点一下直接翻到</span></div>
   <div class="quick-grid">${quickTiles()}</div>
 </section>
 
@@ -190,7 +199,7 @@ export function homeHTML() {
     </div>
     <div class="side-card soft">
       <span class="side-label">${svg('i-shield')}隐私说明</span>
-      <p>统计只记录事件类型、工具编号和一个随机会话标识。你在工具里输入的内容不会被上传或保存。</p>
+      <p>统计只记录事件类型、工具编号和一个随机会话标识。工具里输入的内容不会上传；默认关掉页面即清除，只有你主动开启「记住输入」才会留一份在本机。</p>
     </div>
   </aside>
 </section>

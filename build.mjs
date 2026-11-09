@@ -2,6 +2,7 @@
 // 两道防线：① 注册表里任一工具缺模块，构建失败；② 产物 SEO 体检不过，构建失败。
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { TOOLS, CATS } from './src/data/catalog.mjs';
 import { catTheme } from './src/data/theme.mjs';
@@ -14,6 +15,7 @@ import {
   homeJsonLd, categoryJsonLd, toolJsonLd,
 } from './src/templates/seo.mjs';
 import { writeOgPng } from './gen/og.mjs';
+import { writeIcons } from './gen/icon.mjs';
 import { audit } from './scripts/seo-check.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -76,6 +78,24 @@ copyDir(path.join(ROOT, 'src/static'), DIST);
 copyDir(path.join(ROOT, 'src/lib'), path.join(DIST, 'lib'));
 const toolCount = copyDir(path.join(ROOT, 'src/tools'), path.join(DIST, 't'), (f) => f.endsWith('.js'));
 copyDir(path.join(ROOT, 'public'), DIST);
+writeIcons(DIST);  // PWA 安装图标：由生成器产出，不进版本库
+
+/* Service Worker 的缓存名跟随静态资源内容自动变化。
+   否则改版后会出现「新页面配旧样式」：HTML 走网络优先，CSS/JS 却还命中旧缓存。
+   用内容哈希当版本号，不用每次发版手工递增。 */
+function stampServiceWorker() {
+  const swPath = path.join(DIST, 'sw.js');
+  if (!fs.existsSync(swPath)) return;
+  const h = crypto.createHash('sha1');
+  for (const f of fs.readdirSync(DIST).filter((x) => /\.(js|css|webmanifest|svg|html)$/.test(x)).sort()) {
+    h.update(f);
+    h.update(fs.readFileSync(path.join(DIST, f)));
+  }
+  const v = 'gitd-' + h.digest('hex').slice(0, 10);
+  fs.writeFileSync(swPath, fs.readFileSync(swPath, 'utf8')
+    .replace(/const VERSION = '[^']*';/, `const VERSION = '${v}';`));
+}
+stampServiceWorker();
 
 /* 工具 id → 名称 / 分类色 / 图标，供热度榜与「最近用过」在浏览器里查表。
    只写公开元数据，不含任何凭据。 */
