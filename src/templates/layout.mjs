@@ -87,7 +87,39 @@ ${SYMBOLS}
   ${head}
 </div></header>
 <main class="wrap" id="main">${body}</main>
-<footer class="site-foot"><div class="wrap foot-in">
+<footer class="site-foot">
+<div class="wrap">
+  <section class="friend-sec" id="friend-links" aria-label="友情链接">
+    <div class="friend-head">
+      <div>
+        <h2>友情链接</h2>
+        <p>双向链接 · 系统自动检测对方首页回链，通过后上线，撤链自动移除</p>
+      </div>
+      <button type="button" class="friend-apply" data-links-open aria-expanded="false" aria-controls="links-panel">申请友链</button>
+    </div>
+    <div class="friend-list" data-links-list><span class="friend-loading">正在读取友链…</span></div>
+    <div class="friend-panel" id="links-panel" data-links-panel hidden>
+      <div class="friend-how">
+        <p><b>第一步 · 先在你网站首页放上本站链接</b><br>
+        链接要直接写在首页 HTML 里、正常显示，不要隐藏，也不能只靠脚本动态插入。下面这段可以直接复制：</p>
+        <div class="friend-code">
+          <code data-links-code>&lt;a href="https://www.gitd.cn/" target="_blank" title="一页工具"&gt;一页工具&lt;/a&gt;</code>
+          <button type="button" class="friend-copy" data-links-copy>复制</button>
+        </div>
+        <p><b>第二步 · 填表提交，立刻自动检测</b><br>
+        检测到回链就自动上线；此后每天复查一次，连续 3 次查不到回链会自动从本站移除，无需人工干预。</p>
+      </div>
+      <form class="friend-form" data-links-form novalidate>
+        <label>站点名称<input type="text" name="name" maxlength="24" required placeholder="例：某某工具箱"></label>
+        <label>首页地址<input type="url" name="url" maxlength="200" required placeholder="https://example.com/"></label>
+        <label>一句话简介（选填）<input type="text" name="desc" maxlength="60" placeholder="这个站点是做什么的"></label>
+        <button type="submit" class="friend-submit">提交并检测</button>
+      </form>
+      <p class="friend-msg" data-links-msg role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</div>
+<div class="wrap foot-in">
   <div class="foot-brand">
     <span class="brand-mark sm">${svg('i-logo')}</span>
     <span><b>${SITE_NAME}</b><small>${TOOLS.length} 个免费在线工具 · 绝大多数纯本地运行</small></span>
@@ -106,6 +138,7 @@ ${SYMBOLS}
 <script src="/tools-map.js"></script>
 <script src="/stats.js"></script>
 <script src="/sync.js"></script>
+<script src="/links.js"></script>
 <script src="/ui.js"></script>
 ${js}
 </body>

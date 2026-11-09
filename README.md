@@ -47,8 +47,11 @@ api/stats.js              匿名计数：GET 只读概览 + 热度榜，POST 上
 api/net.js                IP / 域名查询：CDN 边缘地理头 + 公开 IP 库 + DoH 解析，按结果缓存
 api/fx.js                 实时汇率：公开牌价 + 6 小时缓存 + 每日快照序列
 api/sync.js               跨设备同步：同步码存收藏 / 最近使用，只存工具 id
+api/links.js              友情链接：提交申请、抓对方首页验回链、自动上线 / 每日复核 / 撤链自动下架
+api/links-verify.js       Vercel Cron 的薄入口，转发到 /api/links?job=verify
 src/static/stats.js       匿名统计前端：上报、心跳、实时数据 / 热度榜渲染、本地清单
 src/static/sync.js        跨设备同步前端：生成 / 连接同步码、上传 / 拉取、收藏按钮
+src/static/links.js       友链前端：渲染已通过的友链、提交申请、复制回链代码、惰性触发复核
 src/static/ui.js          底部导航、分享、回顶
 src/static/tool.js        工具页加载器：按 data-tool 动态 import，检测真实交互后派发使用事件
 src/static/kit.js         工具运行时：formTool / customTool / 复制下载吸底等 helper
@@ -62,7 +65,7 @@ src/lib/zip.js            原生 JS 手写 ZIP（store + CRC32）
 public/vendor/            本地处理库与 KaTeX 字体
 build.mjs                 读注册表 → 生成 297 个页面 / 资源 / tools-map.js / sitemap / robots / og.png
 scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链、孤岛页、sitemap 一致性
-scripts/api-selftest.mjs  4 个同源接口的离线回归测试（内存 Redis + 假上游）
+scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis + 假上游 + 假对方首页）
 ```
 
 ## 两级分类
@@ -136,11 +139,37 @@ scripts/api-selftest.mjs  4 个同源接口的离线回归测试（内存 Redis 
 
 **剩下 11 个仍不假装支持**：证件照 / 抠图 / OCR 需要模型与算力，Vercel Hobby 的函数时长与请求体限制扛不住；古诗词 34 万首、COCA 完整词频、676 条人生指南是语料版权与体积问题，不是加个数据库就能解决；跨设备摄像头串流要低延迟信令，REST Redis 做不了实时交换；英语词汇量测试依赖完整 COCA 分层抽样。这些边界仍写在工具页里。
 
+## 友情链接自动审核
+
+页脚的友链不是手工维护的清单，而是一套双向校验：**对方网站首页必须先放上指向本站的链接，本站才展示对方；对方撤掉链接，本站自动把对方移除**。全程没有人工审核。
+
+| 环节 | 做法 |
+|---|---|
+| 提交 | 页脚「申请友链」填站名 / 首页地址 / 简介，`POST /api/links` 立刻抓对方首页核验 |
+| 自动通过 | 首页 HTML 里有一条**可见**的、指向 `www.gitd.cn`（或 `gitd.cn`）的 `<a>` → 立即上线，前端马上把卡片插进列表 |
+| 自动复核 | `vercel.json` 的 Cron 每天 UTC 02:00（北京时间 10 点左右）触发 `/api/links-verify` → `/api/links?job=verify` |
+| 自动删除 | 连续 **3 次**复核查不到回链 → 从 Redis 删除，页面上同步消失 |
+| 待审重试 | 没加回链的申请留 30 天，期间每天自动复查；加好后也可以再提交一次立刻通过 |
+| 可追溯 | `GET /api/links?view=audit` 返回最近 40 条上线 / 警告 / 移除 / 过期记录 |
+
+「首页」是硬条件：提交里带的路径、查询、锚点一律丢掉，只抓 `https://对方域名/`，防止用专门做好的内页冒充。检测针对服务端拿到的原始 HTML：HTML 注释、`<script>` / `<style>` / `<template>` 里的链接不算，`display:none`、`hidden`、零字号这类隐藏链接也不算，纯脚本动态插入的链接抓不到（申请面板里已写明）。链接可以是文字或 logo 图片，`http`、带不带 `www`、带任意路径都认。
+
+**为什么是 3 次而不是 1 次**：对方改版、临时 5xx、DNS 抖动都会让单次检测失败，立刻删容易误伤。连续 3 轮都查不到才判定为撤链；网络超时和 5xx 单独标记为临时故障，不累加失败次数，只等下一轮再查。
+
+定时任务是 Hobby 免费计划允许的**每天一次**（`0 2 * * *`，实际触发时间会落在这一小时内）。一轮最多并发复核 12 条，超出的由站点页面以 30 分钟节流的方式惰性触发分批补齐；服务端有 2 分钟互斥锁和每条 20 小时冷却，多开页面也不会重复抓对方网站。
+
+安全与边界：
+
+- 抓对方首页前做域名白名单校验，并**逐跳手动跟随重定向**、每跳重新校验，挡住用 301 把请求引到 `169.254.169.254` 这类内网地址；IP、私有网段、非标准端口、本站自身一律拒绝。
+- 写操作要求同源，按 IP（8 次/小时）与全站（40 次/天）双重限流；同一域名只留一条记录，已上线的站 20 小时内重复提交直接复用结果，不当免费网页探测器；站名 / 简介做粗粒度敏感词过滤；最多 60 条。
+- 不配任何环境变量就能跑：Cron 请求靠 Vercel 固定的 `vercel-cron/1.0` UA 与 `x-vercel-cron-schedule` 头识别。要更严可以在项目设置里加 `CRON_SECRET`，Vercel 会自动带上 `Authorization: Bearer …`，接口随即强制校验。
+- 抓不到也要如实说：只解析静态 HTML、不执行 JS，SPA 站点或屏蔽境外 IP / 自定义 UA 的站点可能一直检测不到；自动审核只能判断「有没有回链」，判断不了对方内容质量。
+
 ## 部署（Vercel）
 
-`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null`，导入仓库即可，无需手填构建命令。`api/` 下的 4 个文件会各自发布成 Vercel Function（`stats` / `net` / `fx` / `sync`），共享代码在 `server/store.mjs`——故意放在 `api/` 目录外，避免被当成一个可访问的路由。数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填。
+`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null` 和一条每日 Cron，导入仓库即可，无需手填构建命令。`api/` 下的 6 个文件会各自发布成 Vercel Function（`stats` / `net` / `fx` / `sync` / `links` / `links-verify`），共享代码在 `server/store.mjs`——故意放在 `api/` 目录外，避免被当成一个可访问的路由。数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填；`CRON_SECRET` 是可选的加固项，不配也能跑。
 
-发版前建议跑 `npm run check`：它会先用内存版 Redis 和假上游把 4 个接口完整跑一遍（34 项断言），再构建并跑 SEO 体检。接口测试不需要网络、不需要凭据，也不会碰线上数据。
+发版前建议跑 `npm run check`：它会先用内存版 Redis、假上游和假对方首页把 6 个接口完整跑一遍（65 项断言，含回链检测与撤链自动下架），再构建并跑 SEO 体检。接口测试不需要网络、不需要凭据，也不会碰线上数据。
 
 正式域名写在 `build.mjs` 顶部的 `PRODUCTION_SITE_URL`，当前是 `https://www.gitd.cn`。根域 `gitd.cn` 在 Vercel 上 308 跳到 `www.gitd.cn`，所以全站 canonical、`og:url`、sitemap、robots 与 JSON-LD 统一用 www 这一套，不产生重复 URL。Vercel 构建直接读这个常量，**不需要在 Dashboard 配环境变量**；本地构建默认 `http://localhost:3000`，也可用 `SITE_URL=... node build.mjs` 覆盖。换域名时改常量或设 `SITE_URL`。
 
@@ -157,6 +186,7 @@ scripts/api-selftest.mjs  4 个同源接口的离线回归测试（内存 Redis 
 - **离线数据**：COCA 词频、古诗词、垃圾分类、嘌呤、DNS / NTP、税率、端口、正则、Git 命令、手机号段等均为内置精简版，不是完整官方语料或实时接口。IP 查询、域名解析、汇率换算与货币排行这 4 个已经升级成「在线数据」档，见上一节。
 - **设备与游戏**：跨设备摄像头串流没有信令服务器，不做假的 WebRTC；汉字笔顺不内置官方笔顺库（田字格描红 + 轨迹回放）；国际象棋开局是近似摆子、不是完整合法走子引擎；魔方教程是 2D 六面展开图 + CFOP 公式速查、不是 3D 模拟器。
 - **其它**：加密 ZIP 是自定义 `.enc` 容器而非标准加密 ZIP；Parquet 只读 Footer 元数据；字体工具只做字形检查 / SVG 轮廓，不做完整子集化；Mermaid / Markmap 是轻量实现；保持音调不变的 time-stretch 未内置。
+- **友链检测**：只解析对方首页的原始 HTML，不执行 JS、不渲染 DOM；隐藏链接、注释 / 脚本里的链接一律不算，SPA 与屏蔽境外访问的站点可能检测不到。详见「友情链接自动审核」。
 
 ## 实现与数据说明
 
