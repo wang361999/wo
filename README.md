@@ -1,8 +1,8 @@
 # 一页工具
 
-零依赖的在线工具箱静态站：**282 个工具的计算与文件处理全在浏览器里完成**，另外 4 个实时数据类工具经本站同源接口取数。**没有文件上传接口、不用登录、不依赖外部 CDN**。站点还有一套匿名计数（只记事件类型与工具编号，不采集输入内容）和一组同源数据接口，落在 Vercel 连接的免费 Redis 上，详见「真实统计」与「边缘工具升级」。
+零依赖的在线工具箱静态站：**568 个工具的计算与文件处理全在浏览器里完成**，另外 4 个实时数据类工具经本站同源接口取数。**没有文件上传接口、不用登录、不依赖外部 CDN**。站点还有一套匿名计数（只记事件类型与工具编号，不采集输入内容）和一组同源数据接口，落在 Vercel 连接的免费 Redis 上，详见「真实统计」与「边缘工具升级」。
 
-本站收录 **286 个工具 / 10 个功能分类，已全部接入**。每个工具都有独立网址 `/tools/<id>/`、一个真实模块 `src/tools/<id>.js`，点开就能跑，没有占位卡片、没有空壳页。实现边界写在文末「实现与数据说明」。
+本站收录 **572 个工具 / 13 个功能分类，已全部接入**。每个工具都有独立网址 `/tools/<id>/`、一个真实模块 `src/tools/<id>.js`，点开就能跑，没有占位卡片、没有空壳页。实现边界写在文末「实现与数据说明」。
 
 ## 跑起来
 
@@ -19,11 +19,11 @@ npm run check            # 上面两项一起跑
 
 ## 实现档位
 
-286 个工具都能打开使用，但实现路径不同。首页角标、工具页说明会如实标注档位：
+572 个工具都能打开使用，但实现路径不同。首页角标、工具页说明会如实标注档位：
 
 | 档位 | 数量 | 含义 |
 |---|---:|---|
-| 纯本地 | 213 | 只用浏览器原生 API（canvas / WebCrypto / WebAudio / MediaRecorder 等）计算，零依赖 |
+| 纯本地 | 499 | 只用浏览器原生 API（canvas / WebCrypto / WebAudio / MediaRecorder 等）计算，零依赖 |
 | 本地库 | 37 | 处理库已随站点打包在 `/vendor/`，首次使用只是加载本地脚本，不联网、不上传文件 |
 | 离线精简 | 32 | 内置精简数据集或语料，够日常速查，但不是完整官方数据，边界写在工具里 |
 | 在线数据 | 4 | 经本站同源接口取实时数据，服务端短期缓存；查询词会送到服务端，但不落库、不关联身份 |
@@ -33,14 +33,30 @@ npm run check            # 上面两项一起跑
 ## 结构
 
 ```
-src/data/catalog.mjs      注册表：11 条 CATS（含 all）+ 端分级 + 286 条工具（mode 档位）
-src/data/theme.mjs        10 个分类的配色与图标（工具宫格 / 热度榜 / 最近使用共用）
+src/data/catalog.mjs      注册表：14 条 CATS（含 all）+ 端分级 + 572 条工具（mode 档位）
+src/data/extra.mjs        第二批 286 个工具的紧凑定义（id / 分类 / 摘要 / 引擎 / 参数）
+gen/spec-extra.mjs        把 extra.mjs 编译成 286 个一行式工具模块
+src/static/x-core.js      第二批工具的运行时入口：公式 / 单位 / 速查表 / 算子分发
+src/static/x-ops.js       文本与历法算子
+src/static/x-ops2.js      编码、随机、颜色算子
+src/static/x-custom.js    交互算子：CSS 生成器、网页工具、画布、小游戏、PDF 处理
+src/static/x-data.js      42 张离线速查表
+scripts/extra-selftest.mjs 新增工具自检：算子覆盖、公式求值、数据集列数、模块齐全
+src/data/extra.mjs        第二批 286 个工具的紧凑定义（id / 分类 / 摘要 / 引擎 / 参数）
+gen/spec-extra.mjs        把 extra.mjs 编译成 286 个一行式工具模块
+src/static/x-core.js      第二批工具的运行时入口：公式 / 单位 / 速查表 / 算子分发
+src/static/x-ops.js       文本与历法算子
+src/static/x-ops2.js      编码、随机、颜色算子
+src/static/x-custom.js    交互算子：CSS 生成器、网页工具、画布、小游戏、PDF 处理
+src/static/x-data.js      42 张离线速查表
+scripts/extra-selftest.mjs 新增工具自检：算子覆盖、公式求值、数据集列数、模块齐全
+src/data/theme.mjs        13 个分类的配色与图标（工具宫格 / 热度榜 / 最近使用共用）
 src/templates/layout.mjs  全站布局、品牌头、页脚与移动端底部导航
-src/templates/home.mjs    门面（图标宫格 + 实时数据 + 我的工具 + 热度榜 + 286 张工具卡片 + 分类静态链接）
+src/templates/home.mjs    门面（图标宫格 + 实时数据 + 我的工具 + 热度榜 + 572 张工具卡片 + 分类静态链接）
 src/templates/category.mjs 分类落地页（静态工具清单 + 热度榜）
 src/templates/tool.mjs    工具页工作台壳（静态说明、FAQ、同类内链、使用次数、收藏）
 src/templates/seo.mjs     全站 title / description / JSON-LD 生成
-src/static/style.css      图标驱动的工具站主题 + 单套响应式 + 286 个工具共用组件
+src/static/style.css      图标驱动的工具站主题 + 单套响应式 + 572 个工具共用组件
 src/static/app.js         门面交互：搜索、两级筛选、计数联动、/ 快捷键
 server/store.mjs          Vercel Functions 共享层：Redis REST 客户端、同源校验、限流、缓存（不在 api/ 下，不会被当路由）
 api/stats.js              匿名计数：GET 只读概览 + 热度榜，POST 上报 / 心跳，带防刷与服务端去重
@@ -59,26 +75,46 @@ src/static/kit.js         工具运行时：formTool / customTool / 复制下载
 src/static/engines.js     refTool / fileTool / gamePanel + PDF·音频·二维码等公用件
 src/static/core.js        零依赖通用函数库（编码、哈希、日期、财务、单位、颜色…）
 src/static/data.js        离线精简数据集（词频、古诗词、端口、税率…）
-src/tools/<id>.js         286 个工具模块，统一导出 mount(root)；30 个手写 + 256 个生成
+src/tools/<id>.js         572 个工具模块，统一导出 mount(root)（手写模块与 gen/ 规格生成模块混合）
 gen/spec-*.mjs            11 份工具规格（S['id'] = {...}），按 kind 编译成模块
 gen/generate.mjs          规格编译器：ser() 序列化 spec，写 src/tools/*.js
 src/lib/zip.js            原生 JS 手写 ZIP（store + CRC32）
 public/vendor/            本地处理库与 KaTeX 字体
-build.mjs                 读注册表 → 生成 297 个页面 / 资源 / tools-map.js / sitemap / robots / og.png
+build.mjs                 读注册表 → 生成 586 个页面 / 资源 / tools-map.js / sitemap / robots / og.png
 scripts/seo-check.mjs     构建期产物体检：元信息、canonical、内链、孤岛页、sitemap 一致性
 scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis + 假上游 + 假对方首页）
 ```
 
+## 第二批工具（数据驱动）
+
+后加的 286 个工具没有再复制一遍工作台代码。每个工具的 `extra.mjs` 条目只写「做什么、用哪个引擎、参数是什么」，`gen/spec-extra.mjs` 编译出的模块只有一行，运行时统一由 `x-core.js` 分发：
+
+- **公式 / 单位 / 速查表**：字段与表达式写在注册表里，构建前 `npm run check:extra` 会用默认值把每条公式都算一遍，算不出数直接失败。
+- **文本 / 编码 / 颜色 / 随机**：按算子名查表，同一个算子可以被多个工具复用。
+- **交互类**：CSS 生成器、网页调试、画布处理、小游戏、PDF 扩展各写一次渲染逻辑。
+
+功能按同名能力补齐，实现、文案、素材都是本站自己写的；表格里带 `离线精简` 标记的工具内置的是常用条目，不冒充完整官方数据，边界写在各自工具里。新增分类为数学与几何、健康养生、站长与网页。
+
+## 第二批工具（数据驱动）
+
+后加的 286 个工具没有再复制一遍工作台代码。每个工具的 `extra.mjs` 条目只写「做什么、用哪个引擎、参数是什么」，`gen/spec-extra.mjs` 编译出的模块只有一行，运行时统一由 `x-core.js` 分发：
+
+- **公式 / 单位 / 速查表**：字段与表达式写在注册表里，构建前 `npm run check:extra` 会用默认值把每条公式都算一遍，算不出数直接失败。
+- **文本 / 编码 / 颜色 / 随机**：按算子名查表，同一个算子可以被多个工具复用。
+- **交互类**：CSS 生成器、网页调试、画布处理、小游戏、PDF 扩展各写一次渲染逻辑。
+
+功能按同名能力补齐，实现、文案、素材都是本站自己写的；表格里带 `离线精简` 标记的工具内置的是常用条目，不冒充完整官方数据，边界写在各自工具里。新增分类为数学与几何、健康养生、站长与网页。
+
 ## 两级分类
 
 - **第一级**：全部 / 电脑端 / 手机端。工具标 `dev`（`pc` / `mobile` / `both`），切一级时二级计数联动。
-- **第二级**：10 个功能分类（导航资源、PDF 工具、图片、音频/视频、文本与开发、中文语言、生活与杂务、财务与计算、CSS 生成器、益智游戏）。
+- **第二级**：13 个功能分类（导航资源、PDF 工具、图片、音频/视频、文本与开发、中文语言、生活与杂务、财务与计算、CSS 生成器、益智游戏、数学与几何、健康养生、站长与网页）。
 
-视觉是**图标驱动的工具站**：浅灰底 + 白卡片 + 10 个分类各自的柔和色图标 + 单一稳重蓝（`#2f5bd7`），不是文字目录。首页自上而下是紧凑标题与大搜索框、**实时数据条**（当前在线 / 历史访问 / 独立访客 / 使用人数）、8 格常用工具图标宫格、我的工具（收藏 + 最近用过 + 跨设备同步入口）、按真实次数排序的热度榜、10 个分类入口，最后才是 286 个工具的筛选索引。工具页有彩色分类图标、本工具使用次数、收藏按钮、工作台、热度榜与同类工具图标清单。
+视觉是**图标驱动的工具站**：浅灰底 + 白卡片 + 13 个分类各自的柔和色图标 + 单一稳重蓝（`#2f5bd7`），不是文字目录。首页自上而下是紧凑标题与大搜索框、**实时数据条**（当前在线 / 历史访问 / 独立访客 / 使用人数）、8 格常用工具图标宫格、我的工具（收藏 + 最近用过 + 跨设备同步入口）、按真实次数排序的热度榜、13 个分类入口，最后才是 572 个工具的筛选索引。工具页有彩色分类图标、本工具使用次数、收藏按钮、工作台、热度榜与同类工具图标清单。
 
 **移动端按 App 的信息架构做**：底部固定四栏 TabBar（首页 / 分类 / 榜单 / 搜索）、4 列九宫格快捷入口、2×2 紧凑数据卡、可横滑的热度榜卡片、工具页右下角竖排圆形悬浮操作（首页 / 分享 / 回顶），`viewport-fit=cover` 适配安全区。仍是**一套自适应响应式**，没有电脑端 / 手机端两套 DOM。
 
-286 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
+572 个工具通过 CSS 变量（`--paper` / `--ink` / `--line` / `--accent`…）跟着换肤，模块本身一行不改。按 `/` 可直接聚焦搜索。
 
 ## 加一个工具（三步，壳不用改）
 
@@ -174,7 +210,7 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 
 发版前建议跑 `npm run check`：它会先用内存版 Redis、假上游和假对方首页把 6 个接口完整跑一遍（65 项断言，含回链检测与撤链自动下架），再构建并跑 SEO 体检。接口测试不需要网络、不需要凭据，也不会碰线上数据。
 
-`build.mjs` 末尾还有一道「生产域名视角」补扫：本地 canonical 是 localhost，SEO 体检会跳过占位域名检查，页面里写了 `example.com` / `xxx.vercel.app` 时本地全绿、上了 Vercel 才 297 页全红。补扫把这类问题直接挡在本地构建阶段；要完整复现生产构建，可跑 `SITE_URL=https://www.gitd.cn node build.mjs`。
+`build.mjs` 末尾还有一道「生产域名视角」补扫：本地 canonical 是 localhost，SEO 体检会跳过占位域名检查，页面里写了 `example.com` / `xxx.vercel.app` 时本地全绿、上了 Vercel 才 586 页全红。补扫把这类问题直接挡在本地构建阶段；要完整复现生产构建，可跑 `SITE_URL=https://www.gitd.cn node build.mjs`。
 
 正式域名写在 `build.mjs` 顶部的 `PRODUCTION_SITE_URL`，当前是 `https://www.gitd.cn`。根域 `gitd.cn` 在 Vercel 上 308 跳到 `www.gitd.cn`，所以全站 canonical、`og:url`、sitemap、robots 与 JSON-LD 统一用 www 这一套，不产生重复 URL。Vercel 构建直接读这个常量，**不需要在 Dashboard 配环境变量**；本地构建默认 `http://localhost:3000`，也可用 `SITE_URL=... node build.mjs` 覆盖。换域名时改常量或设 `SITE_URL`。
 
@@ -201,12 +237,12 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 
 ## SEO
 
-产物共 297 个静态页：1 首页 + 10 分类页 + 286 工具页。每页有独立 title / description / canonical，带 OG 与 Twitter Card；结构化数据全部在 `<head>`：首页 `WebSite`、分类页 `CollectionPage + ItemList + BreadcrumbList`、工具页 `WebApplication + BreadcrumbList`。
+产物共 586 个静态页：1 首页 + 13 分类页 + 572 工具页。每页有独立 title / description / canonical，带 OG 与 Twitter Card；结构化数据全部在 `<head>`：首页 `WebSite`、分类页 `CollectionPage + ItemList + BreadcrumbList`、工具页 `WebApplication + BreadcrumbList`。
 
-- **描述清洗**：注册表里有些 `desc` 是早期录入留下的残句（结尾半个英文词、孤立数字、多余斜杠）。`src/templates/seo.mjs` 的 `cleanDesc()` 先整理成可读中文，再按 10 个分类 × 4 档实现档位拼差异化描述，`fit()` 按预算整段裁剪，不留下半截词。卡片、分类页、相关工具区复用同一份清洗结果。
+- **描述清洗**：注册表里有些 `desc` 是早期录入留下的残句（结尾半个英文词、孤立数字、多余斜杠）。`src/templates/seo.mjs` 的 `cleanDesc()` 先整理成可读中文，再按 13 个分类 × 4 档实现档位拼差异化描述，`fit()` 按预算整段裁剪，不留下半截词。卡片、分类页、相关工具区复用同一份清洗结果。
 - **分类落地页**：`/cat/<id>/` 是真实静态页，首页底部有静态分类链接区（筛选按钮爬虫点不了），工具页面包屑与「同类工具」的「查看全部」都指回分类页。「同类工具」按 id 哈希环形取 6 个，不再固定取注册顺序前 3 个，避免两百多个工具收不到内链。
-- **工具页静态正文**：除用法外补了「关于这个工具」与 3 条常见问题，内容按工具名、分类、端分级、实现档位变化，缓解 286 页共用一套模板文字的问题。工具模块仍是打开时才动态加载。
-- **sitemap / robots**：`sitemap.xml` 只写 `loc`。旧版 287 条 `lastmod` 全用构建当天，等于每次发版都宣称全站改过，不可靠的 lastmod 会被忽略，索性不写；`changefreq` / `priority` 同样被忽略。`robots.txt` 明确放行 `/t/` 与 `/vendor/`（保证爬虫能取到工具模块完成渲染），同时 `Disallow: /api/` 避免数据接口被爬。
-- **分享图**：`og.png` 由 `gen/og.mjs` 用 Node 内置 `zlib` 手写 PNG 生成，26×11 = 286 个方块对应 286 个工具，不引图像库、不依赖系统字体。
+- **工具页静态正文**：除用法外补了「关于这个工具」与 3 条常见问题，内容按工具名、分类、端分级、实现档位变化，缓解 572 页共用一套模板文字的问题。工具模块仍是打开时才动态加载。
+- **sitemap / robots**：`sitemap.xml` 只写 `loc`。旧版里每条 `lastmod` 都填构建当天，等于每次发版都宣称全站改过，不可靠的 lastmod 会被忽略，索性不写；`changefreq` / `priority` 同样被忽略。`robots.txt` 明确放行 `/t/` 与 `/vendor/`（保证爬虫能取到工具模块完成渲染），同时 `Disallow: /api/` 避免数据接口被爬。
+- **分享图**：`og.png` 由 `gen/og.mjs` 用 Node 内置 `zlib` 手写 PNG 生成，蓝色方块网格对应全部 572 个工具，不引图像库、不依赖系统字体。
 
 `scripts/seo-check.mjs` 在每次构建末尾体检真实产物：title / description 缺失、重复或过短，canonical 不自洽，缺 OG / JSON-LD，占位域名残留，内部死链，孤岛页，sitemap 与页面集合不一致 —— 任一项不过就构建失败。也可单独跑 `npm run check:seo`。

@@ -9,7 +9,8 @@
     "build": "node build.mjs",
     "check:seo": "node scripts/seo-check.mjs",
     "check:api": "node scripts/api-selftest.mjs",
-    "check": "node scripts/api-selftest.mjs && node build.mjs"
+    "check:extra": "node scripts/extra-selftest.mjs",
+    "check": "node scripts/api-selftest.mjs && node scripts/extra-selftest.mjs && node build.mjs"
   },
   "engines": {
     "node": ">=18"

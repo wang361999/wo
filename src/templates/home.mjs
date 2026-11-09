@@ -1,5 +1,5 @@
 // 首页：图标驱动的快捷入口 + 真实实时数据 + 热度榜 + 分类宫格 + 全部工具索引。
-// 服务端一次性输出 286 个工具与 10 个分类的静态链接，客户端只做筛选与计数。
+// 服务端一次性输出全部工具与各分类的静态链接，客户端只做筛选与计数。
 import { TOOLS, CATS, DEVS, CAT_MAP, DEV_NAME, MODE_NAME, MODE_DESC } from '../data/catalog.mjs';
 import { catTheme } from '../data/theme.mjs';
 import { svg, esc } from './layout.mjs';
@@ -61,7 +61,7 @@ function categoryTiles() {
   }).join('');
 }
 
-/* 分类按钮是 JS 筛选控件，爬虫点不了。这里给 10 个真实分类页一份静态链接。 */
+/* 分类按钮是 JS 筛选控件，爬虫点不了。这里给各分类页一份静态链接。 */
 function catLinks() {
   const items = CATS.filter((c) => c.id !== 'all').map((c) => {
     const list = TOOLS.filter((t) => t.cat === c.id);
@@ -74,7 +74,7 @@ function catLinks() {
     </a>`;
   }).join('\n');
   return `<section class="dir" id="cat-dir" aria-label="按分类浏览工具">
-    <div class="sec-head"><div><h2>按分类浏览</h2><p>10 个分类，每类都有独立页面，方便查找和收藏。</p></div></div>
+    <div class="sec-head"><div><h2>按分类浏览</h2><p>${CATS.filter(c=>c.id!=='all').length} 个分类，每类都有独立页面，方便查找和收藏。</p></div></div>
     <div class="dir-grid">${items}</div>
   </section>`;
 }
@@ -168,7 +168,7 @@ export function homeHTML() {
 </section>
 
 <section class="cat-sec" id="categories" aria-label="工具分类">
-  <div class="sec-head"><h2>按分类找工具</h2><span>10 个分类 · ${TOOLS.length} 个工具</span></div>
+  <div class="sec-head"><h2>按分类找工具</h2><span>${CATS.filter(c=>c.id!=='all').length} 个分类 · ${TOOLS.length} 个工具</span></div>
   <div class="cat-grid">${categoryTiles()}</div>
 </section>
 

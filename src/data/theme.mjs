@@ -12,6 +12,9 @@ export const CAT_THEME = {
   finance:  { color: '#0891b2', soft: '#e3f6fb', emoji: '💰' },
   css:      { color: '#e0446d', soft: '#ffeaf0', emoji: '🎨' },
   puzzle:   { color: '#c58a0b', soft: '#fff6da', emoji: '🧩' },
+  math:     { color: '#7c5cd6', soft: '#f1ecff', emoji: '📐' },
+  health:   { color: '#0e9f6e', soft: '#e4f7f0', emoji: '🩺' },
+  web:      { color: '#2563eb', soft: '#e8f2ff', emoji: '🌐' },
 };
 
 export function catTheme(id) {

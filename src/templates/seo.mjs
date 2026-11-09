@@ -1,7 +1,7 @@
 // SEO 元信息：注册表里的功能摘要是抓取来的，常带截断点（半个英文词、结尾斜杠、孤立数字）。
 // 这里统一清洗成能读的中文，再按页面类型生成 title / description / 结构化数据，
 // 保证 287+ 个页面各有可读且不雷同的元信息，不让残句直接进 <meta>。
-import { CAT_MAP, MODE_NAME, DEV_NAME } from '../data/catalog.mjs';
+import { CAT_MAP, MODE_NAME, DEV_NAME, TOOLS, CATS } from '../data/catalog.mjs';
 
 export const SITE_NAME = '一页工具';
 export const SITE_TAGLINE = '打开就能用 · 文件不上传';
@@ -24,6 +24,9 @@ export const CAT_SEO = {
   finance: { kw: '在线财务计算工具', line: '算清利息、税额、汇率这些数字，输入留在自己设备上。', intro: '个税、房贷、复利、含税价拆分、汇率换算、资产负债。数字比较敏感，所以全部在你自己的浏览器里算，不往任何服务器发。' },
   css:     { kw: '在线 CSS 代码生成器', line: '调好参数即时预览，复制生成的 CSS 就能用。', intro: '渐变、阴影、圆角、边框、动画、字体排版。调滑块看效果，代码实时给，复制粘贴进项目即可，不用记那一堆属性顺序。' },
   puzzle:  { kw: '在线益智小游戏', line: '点开就玩，不需要注册，也不记录成绩。', intro: '反应速度、色觉、听辨、记忆、手眼协调这一类小测试。不排名、不登录、不存数据，就是点开玩两分钟。' },
+  math:    { kw: '在线数学与几何工具', line: '公式、图形与单位换算，填好参数就能出结果。', intro: '几何作图、方程求解、坐标与角度换算、数列与统计。数学课上要动笔算一遍的东西，这里填几个数就能看到结果，还能顺手对一下过程。' },
+  health:  { kw: '在线健康养生工具', line: '作息、饮食与身体指标的日常换算，打开就能算。', intro: '热量与营养、作息安排、身体指标、运动与饮水提醒。把日常养生里要查要算的小事凑到一处，随手记一下，不用装一堆 App。' },
+  web:     { kw: '在线站长与网页工具', line: '网页与站点常用的生成、检测与格式化，粘贴即用。', intro: 'HTML/CSS/JS 片段、meta 与头信息、编码与转义、域名与备案速查、颜色与排版。做站和维护页面时反复要用的那一摞零碎工具。' },
 };
 const DEFAULT_SEO = { kw: '免费在线工具', line: '打开就能用，不用注册。', intro: '一组打开就能用的小工具。' };
 
@@ -84,9 +87,11 @@ function fit(s, max) {
 const catSEO = (id) => CAT_SEO[id] || DEFAULT_SEO;
 
 export function homeMeta(siteUrl) {
+  const catN = CATS.filter(c=>c.id!=='all').length;
+  const catNames = CATS.filter(c=>c.id!=='all').slice(0, 6).map((c) => c.name).join('、');
   return {
-    title: `${SITE_NAME} - 286 个免费在线小工具，打开就能用、文件不上传`,
-    desc: '286 个免费在线工具，覆盖 PDF、图片、音视频、文本开发、中文、生活计算、财务、CSS 与益智游戏 10 类。全部在浏览器本地运行，文件不上传、无需登录、不依赖外部 CDN。',
+    title: `${SITE_NAME} - ${TOOLS.length} 个免费在线小工具，打开就能用、文件不上传`,
+    desc: `${TOOLS.length} 个免费在线工具，覆盖 ${catNames} 等 ${catN} 类。全部在浏览器本地运行，文件不上传、无需登录、不依赖外部 CDN。`,
     canonical: `${siteUrl}/`,
   };
 }
@@ -97,7 +102,7 @@ export function categoryMeta(cat, tools, siteUrl) {
   return {
     title: `${cat.name} - ${tools.length} 个免费在线工具 | ${SITE_NAME}`,
     // intro 是给分类页正文用的，meta 另写短句，别把长导语截一半塞进 description
-    desc: clip(`${cat.name}：${names}等 ${tools.length} 个工具，在线免费使用。${seo.line}全部在浏览器本地运行，文件不上传、无需登录，打开即用。`, 118),
+    desc: clip(`${cat.name}：${names}等 ${tools.length} 个工具，在线免费使用。${seo.line}全部在浏览器本地运行，文件不上传、无需登录，打开即用。`, 150),
     canonical: `${siteUrl}/cat/${cat.id}/`,
   };
 }

@@ -1,4 +1,4 @@
-// 工具箱构建：读注册表 → 生成首页 + 10 个分类页 + 286 个工具页 + 静态资源 + sitemap/robots/og。
+// 工具箱构建：读注册表 → 生成首页、各分类页与每个工具的独立页 + 静态资源 + sitemap/robots/og。
 // 两道防线：① 注册表里任一工具缺模块，构建失败；② 产物 SEO 体检不过，构建失败。
 import fs from 'node:fs';
 import path from 'node:path';

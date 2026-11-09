@@ -1,5 +1,8 @@
 // 工具注册表：分类体系、端分级与工具清单。desc 是功能摘要。
+// 清单由 RAW 与 extra.mjs 的 EXTRA 合并、分类由 CATS 与 EXTRA_CATS 合并，数量都从数组实时得出。
 // status 是早期分批实现时的进度标记，导出时统一为 ready；tier 用于生成阶段分组。
+
+import { EXTRA, EXTRA_CATS } from './extra.mjs';
 
 export const DEVS = [
   { id:'all', name:'全部' },
@@ -19,6 +22,7 @@ export const CATS = [
   { id:"finance", name:"财务与计算", icon:"💰" },
   { id:"css", name:"CSS 生成器", icon:"🎨" },
   { id:"puzzle", name:"益智游戏", icon:"🧩" },
+  ...EXTRA_CATS,
 ];
 
 const RAW = [
@@ -308,6 +312,7 @@ const RAW = [
   { id:"verbal-memory", name:"语言记忆", cat:"puzzle", dev:"both", icon:"📖", desc:"Verbal Memory 中文版、一次一个词判断它这局里出现过没有、见过点见过没见过点新、答错扣命三条", tags:["见过点见过没见过点新", "答错扣命三条命用完结束"], status:"later", tier:4 },
   { id:"symbol-search", name:"符号搜索", cat:"puzzle", dev:"both", icon:"🔍", desc:"Symbol Search 加工速度测试、左边两个目标符号右边五个搜索符号判断有没有出现、匹配按右箭头不", tags:[], status:"later", tier:4 },
   { id:"hand-eye", name:"手眼协调", cat:"puzzle", dev:"both", icon:"🎯", desc:"十字滑轨手眼配合测试、两颗小球同时来回跑先点停水平再点停垂直、两次停位交出落点落在虚线圈里才得分越靠圆心", tags:["十字滑轨手眼配合测试", "练的是提前量不是反应"], status:"later", tier:4 },
+  ...EXTRA,
 ];
 
 /* 全量接入：不再保留「待接入 / 需引库 / 暂不支持」的进度状态，每个工具都有独立页和真实模块。
@@ -321,7 +326,7 @@ const API_IDS = new Set(["ip", "domain-ip", "currency", "currency-rank"]);
 export const TOOLS = RAW.map((t) => ({
   ...t,
   status: 'ready',
-  mode: API_IDS.has(t.id) ? 'api' : VENDOR_IDS.has(t.id) ? 'vendor' : LITE_IDS.has(t.id) ? 'lite' : 'local',
+  mode: t.mode || (API_IDS.has(t.id) ? 'api' : VENDOR_IDS.has(t.id) ? 'vendor' : LITE_IDS.has(t.id) ? 'lite' : 'local'),
 }));
 
 export const MODE_NAME = { local: '纯本地', vendor: '本地库', lite: '离线精简', api: '在线数据' };
