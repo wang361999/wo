@@ -361,7 +361,7 @@ S['currency'] = { kind: 'form', titleIn: '金额与币种', titleOut: '换算结
       const xy = vals.map((n, i) => [(i / (vals.length - 1)) * 420, 68 - ((n - lo) / (hi - lo || 1)) * 60]);
       const line = xy.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
       spark = '<p class="t-hint" style="margin-top:14px">USD → CNY 每日快照（最近 ' + pts.length + ' 天，' + F(lo, 4) + ' ~ ' + F(hi, 4) + '）</p>' +
-        '<svg viewBox="0 0 420 76" width="100%" height="76" role="img" aria-label="美元兑人民币走势"><polyline points="' + line + '" fill="none" stroke="#2f5bd7" stroke-width="2" stroke-linejoin="round"/><circle cx="' + xy[xy.length - 1][0].toFixed(1) + '" cy="' + xy[xy.length - 1][1].toFixed(1) + '" r="3" fill="#2f5bd7"/></svg>';
+        '<svg viewBox="0 0 420 76" width="100%" height="76" role="img" aria-label="美元兑人民币走势"><polyline points="' + line + '" fill="none" stroke="#2a45c4" stroke-width="2" stroke-linejoin="round"/><circle cx="' + xy[xy.length - 1][0].toFixed(1) + '" cy="' + xy[xy.length - 1][1].toFixed(1) + '" r="3" fill="#2a45c4"/></svg>';
     }
     return { text, copy: text, stats: [{ label: '换算结果', value: F(out) + ' ' + t }, { label: '折人民币', value: F(cny, 2) + ' 元' }, { label: '牌价时间', value: when.slice(5, 16) }],
       preview: '<p class="t-hint">1 单位该币种 ≈ 人民币；第三列是把当前金额换成该币种</p>' +

@@ -52,7 +52,7 @@ function fieldHTML(f) {
   if (f.type === 'select') c = `<select class="t-select" id="${id}" data-x="${E(f.id)}">${f.options.map((o) => `<option value="${E(o)}" ${String(o) === String(f.default ?? f.options[0]) ? 'selected' : ''}>${E(o)}</option>`).join('')}</select>`;
   else if (f.type === 'textarea') c = `<textarea class="t-textarea" id="${id}" data-x="${E(f.id)}" rows="${f.rows || 5}" placeholder="${E(f.placeholder || '')}">${E(f.default ?? '')}</textarea>`;
   else if (f.type === 'checkbox') return `<div class="t-field"><label class="t-check"><input type="checkbox" id="${id}" data-x="${E(f.id)}" ${f.default ? 'checked' : ''}>${E(f.label)}</label></div>`;
-  else if (f.type === 'color') c = `<input class="t-input" type="color" id="${id}" data-x="${E(f.id)}" value="${E(f.default || '#2f5bd7')}" style="height:40px;padding:3px;cursor:pointer">`;
+  else if (f.type === 'color') c = `<input class="t-input" type="color" id="${id}" data-x="${E(f.id)}" value="${E(f.default || '#2a45c4')}" style="height:40px;padding:3px;cursor:pointer">`;
   else if (f.type === 'file') c = `<input class="t-input" type="file" id="${id}" data-x="${E(f.id)}" ${f.accept ? `accept="${E(f.accept)}"` : ''} ${f.multiple ? 'multiple' : ''} style="padding:9px">`;
   else if (f.type === 'range') c = `<input class="t-range" type="range" id="${id}" data-x="${E(f.id)}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${f.default}"><span class="t-hint" data-xv="${E(f.id)}">${f.default}</span>`;
   else c = `<input class="t-input" type="${f.type === 'number' || f.type === 'date' || f.type === 'time' ? f.type : 'text'}" id="${id}" data-x="${E(f.id)}" value="${E(f.default ?? '')}" placeholder="${E(f.placeholder || '')}" ${f.type === 'number' ? 'step="any"' : ''}>`;
@@ -125,7 +125,7 @@ function cssTool(fields, build, note) {
     fields,
     build: (v) => {
       const r = build(v);
-      return { code: r.css, copy: r.css, preview: `<div style="width:100%;display:flex;justify-content:center;padding:22px;background:${E(r.bg || '#f6f8fb')};border-radius:8px">${r.demo}</div>`, stats: r.stats };
+      return { code: r.css, copy: r.css, preview: `<div style="width:100%;display:flex;justify-content:center;padding:22px;background:${E(r.bg || '#f4f1e8')};border-radius:8px">${r.demo}</div>`, stats: r.stats };
     },
   });
 }
@@ -245,12 +245,12 @@ export const CUSTOM = {
     title: 'HTML / CSS / JS', outTitle: '隔离预览', copyLabel: '复制源码', wide: true,
     fields: [
       { id: 'html', label: 'HTML', type: 'textarea', rows: 7, default: '<h1>你好，一页工具</h1>\n<p>写点什么，右边立刻能看到。</p>' },
-      { id: 'css', label: 'CSS', type: 'textarea', rows: 4, default: 'body{font-family:system-ui;padding:24px;color:#1b2432}h1{color:#2f5bd7}' },
+      { id: 'css', label: 'CSS', type: 'textarea', rows: 4, default: 'body{font-family:system-ui;padding:24px;color:#262218}h1{color:#2a45c4}' },
       { id: 'js', label: 'JS（可选）', type: 'textarea', rows: 3, default: '' },
     ],
     build: (v) => {
       const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${v.css}</style></head><body>${v.html}<script>try{${v.js}}catch(e){document.body.insertAdjacentHTML('beforeend','<pre style="color:red">'+e.message+'</pre>')}<\/script></body></html>`;
-      return { code: doc, copy: doc, preview: `<iframe sandbox="allow-scripts" style="width:100%;height:320px;border:1px solid #e3e8f0;border-radius:8px;background:#fff" srcdoc="${E(doc)}"></iframe>` };
+      return { code: doc, copy: doc, preview: `<iframe sandbox="allow-scripts" style="width:100%;height:320px;border:1px solid #e6e2d3;border-radius:8px;background:#fff" srcdoc="${E(doc)}"></iframe>` };
     },
   }),
   jsrunner: (root, K) => {
@@ -281,7 +281,7 @@ export const CUSTOM = {
     fields: [
       { id: 'label', label: '左侧标签', type: 'text', default: 'build' },
       { id: 'value', label: '右侧状态', type: 'text', default: 'passing' },
-      { id: 'color', label: '状态底色', type: 'color', default: '#2f5bd7' },
+      { id: 'color', label: '状态底色', type: 'color', default: '#2a45c4' },
       { id: 'style', label: '样式', type: 'select', options: ['flat', 'rounded'], default: 'flat' },
     ],
     actions: [{ label: '下载 SVG', run: (v, c) => c.K.download('badge.svg', c.getResult(), 'image/svg+xml') }],
@@ -315,7 +315,7 @@ export const CUSTOM = {
         { id: 'sec', label: '间隔', type: 'number', default: 30, unit: '秒' },
       ],
       note: '很多站点用 X-Frame-Options 禁止被嵌入，遇到空白是对方限制，不是工具故障。',
-      build: (v) => ({ code: v.url, copy: v.url, preview: `<iframe data-frame src="${E(v.url)}" style="width:100%;height:280px;border:1px solid #e3e8f0;border-radius:8px;background:#fff"></iframe>` }),
+      build: (v) => ({ code: v.url, copy: v.url, preview: `<iframe data-frame src="${E(v.url)}" style="width:100%;height:280px;border:1px solid #e6e2d3;border-radius:8px;background:#fff"></iframe>` }),
     });
     let timer = null;
     const tick = () => { const f = $('[data-frame]', root); if (f) f.src = p.values().url + (p.values().url.includes('?') ? '&' : '?') + '_r=' + Date.now(); };
@@ -352,7 +352,7 @@ export const CUSTOM = {
       <div class="t-head"><h2><span class="step">1</span>屏幕取色</h2><span class="hint">浏览器原生能力</span></div>
       <button type="button" class="t-btn primary" data-pick>开始取色</button>
       <p class="t-hint" data-msg style="margin-top:14px">点按钮后光标会变成取色器，点屏幕任意位置取色。</p>
-      <div data-swatch style="height:90px;border-radius:8px;border:1px solid #e3e8f0;margin-top:14px;background:#f6f8fb"></div>
+      <div data-swatch style="height:90px;border-radius:8px;border:1px solid #e6e2d3;margin-top:14px;background:#f4f1e8"></div>
       </section></div>`;
     root.addEventListener('click', async (e) => {
       if (!e.target.closest('[data-pick]')) return;
@@ -373,19 +373,19 @@ export const CUSTOM = {
   ], (v) => ({
     bg: 'linear-gradient(120deg,#7aa8ff,#f0a6c8 55%,#9be7c4)',
     css: `background: ${v.color}${Math.round(v.alpha * 2.55).toString(16).padStart(2, '0')};\nbackdrop-filter: blur(${v.blur}px) saturate(160%);\n-webkit-backdrop-filter: blur(${v.blur}px) saturate(160%);\nborder: 1px solid rgba(255,255,255,${(v.border / 100).toFixed(2)});\nborder-radius: ${v.radius}px;\nbox-shadow: 0 8px 32px rgba(31,38,135,.18);`,
-    demo: `<div style="padding:26px 38px;background:${v.color}${Math.round(v.alpha * 2.55).toString(16).padStart(2, '0')};backdrop-filter:blur(${v.blur}px) saturate(160%);-webkit-backdrop-filter:blur(${v.blur}px) saturate(160%);border:1px solid rgba(255,255,255,${v.border / 100});border-radius:${v.radius}px;box-shadow:0 8px 32px rgba(31,38,135,.18);color:#1b2432;font-weight:600">毛玻璃卡片</div>`,
+    demo: `<div style="padding:26px 38px;background:${v.color}${Math.round(v.alpha * 2.55).toString(16).padStart(2, '0')};backdrop-filter:blur(${v.blur}px) saturate(160%);-webkit-backdrop-filter:blur(${v.blur}px) saturate(160%);border:1px solid rgba(255,255,255,${v.border / 100});border-radius:${v.radius}px;box-shadow:0 8px 32px rgba(31,38,135,.18);color:#262218;font-weight:600">毛玻璃卡片</div>`,
   }), '需要卡片背后有内容才能看出模糊效果。'),
   cssloading: cssTool([
     { id: 'style', label: '样式', type: 'select', options: ['旋转圆环', '跳动圆点', '进度条', '脉冲方块'], default: '旋转圆环' },
-    { id: 'color', label: '颜色', type: 'color', default: '#2f5bd7' },
+    { id: 'color', label: '颜色', type: 'color', default: '#2a45c4' },
     { id: 'size', label: '尺寸', type: 'range', min: 12, max: 80, default: 40, unit: 'px' },
     { id: 'speed', label: '速度', type: 'range', min: 4, max: 30, default: 10, unit: '×0.1s' },
   ], (v) => {
     const t = (v.speed / 10).toFixed(1), c = v.color, s = v.size;
     let inner = '', css = '';
-    if (v.style === '旋转圆环') { css = `.loader{width:${s}px;height:${s}px;border:4px solid #e3e8f0;border-top-color:${c};border-radius:50%;animation:spin ${t}s linear infinite}\n@keyframes spin{to{transform:rotate(360deg)}}`; inner = `<div class="loader"></div>`; }
+    if (v.style === '旋转圆环') { css = `.loader{width:${s}px;height:${s}px;border:4px solid #e6e2d3;border-top-color:${c};border-radius:50%;animation:spin ${t}s linear infinite}\n@keyframes spin{to{transform:rotate(360deg)}}`; inner = `<div class="loader"></div>`; }
     else if (v.style === '跳动圆点') { css = `.loader{display:flex;gap:6px}\n.loader i{width:${Math.round(s / 4)}px;height:${Math.round(s / 4)}px;border-radius:50%;background:${c};animation:bounce ${t}s infinite ease-in-out}\n.loader i:nth-child(2){animation-delay:.15s}.loader i:nth-child(3){animation-delay:.3s}\n@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-${Math.round(s / 2)}px);opacity:1}}`; inner = `<div class="loader"><i></i><i></i><i></i></div>`; }
-    else if (v.style === '进度条') { css = `.loader{width:${s * 4}px;height:8px;border-radius:8px;background:#e3e8f0;overflow:hidden}\n.loader::after{content:"";display:block;width:40%;height:100%;background:${c};border-radius:8px;animation:slide ${t}s infinite ease-in-out}\n@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}`; inner = `<div class="loader"></div>`; }
+    else if (v.style === '进度条') { css = `.loader{width:${s * 4}px;height:8px;border-radius:8px;background:#e6e2d3;overflow:hidden}\n.loader::after{content:"";display:block;width:40%;height:100%;background:${c};border-radius:8px;animation:slide ${t}s infinite ease-in-out}\n@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}`; inner = `<div class="loader"></div>`; }
     else { css = `.loader{width:${s}px;height:${s}px;background:${c};border-radius:8px;animation:pulse ${t}s infinite ease-in-out}\n@keyframes pulse{0%,100%{transform:scale(.6);opacity:.4}50%{transform:scale(1);opacity:1}}`; inner = `<div class="loader"></div>`; }
     return { css, demo: `<style>${css}</style>${inner}` };
   }, '复制 CSS 后记得把 @keyframes 一起带上。'),
@@ -399,7 +399,7 @@ export const CUSTOM = {
   ], (v) => {
     const s = v.size, c = v.bg;
     const after = { 朝下: `bottom:-${s - 1}px;left:${v.pos}%;transform:translateX(-50%);border-width:${s}px ${s}px 0;border-color:${c} transparent transparent`, 朝上: `top:-${s - 1}px;left:${v.pos}%;transform:translateX(-50%);border-width:0 ${s}px ${s}px;border-color:transparent transparent ${c}`, 朝左: `left:-${s - 1}px;top:${v.pos}%;transform:translateY(-50%);border-width:${s}px ${s}px ${s}px 0;border-color:transparent ${c} transparent transparent`, 朝右: `right:-${s - 1}px;top:${v.pos}%;transform:translateY(-50%);border-width:${s}px 0 ${s}px ${s}px;border-color:transparent transparent transparent ${c}` }[v.side];
-    const css = `.bubble{position:relative;display:inline-block;padding:12px 16px;background:${c};border-radius:${v.radius}px;color:#1b2432}\n.bubble::after{content:"";position:absolute;width:0;height:0;border-style:solid;${after}}`;
+    const css = `.bubble{position:relative;display:inline-block;padding:12px 16px;background:${c};border-radius:${v.radius}px;color:#262218}\n.bubble::after{content:"";position:absolute;width:0;height:0;border-style:solid;${after}}`;
     return { css, demo: `<style>${css}</style><div class="bubble">${E(v.text)}</div>` };
   }),
   cssstripes: cssTool([
@@ -425,7 +425,7 @@ export const CUSTOM = {
   }, '新拟态对底色要求高，浅灰底上效果最好。'),
   csstextshadow: cssTool([
     { id: 'text', label: '文字', type: 'text', default: '一页工具' },
-    { id: 'color', label: '阴影颜色', type: 'color', default: '#2f5bd7' },
+    { id: 'color', label: '阴影颜色', type: 'color', default: '#2a45c4' },
     { id: 'x', label: '水平偏移', type: 'range', min: -20, max: 20, default: 3, unit: 'px' },
     { id: 'y', label: '垂直偏移', type: 'range', min: -20, max: 20, default: 3, unit: 'px' },
     { id: 'blur', label: '模糊', type: 'range', min: 0, max: 30, default: 6, unit: 'px' },
@@ -433,12 +433,12 @@ export const CUSTOM = {
   ], (v) => {
     const arr = [];
     for (let i = 1; i <= v.layers; i++) arr.push(`${v.x * i}px ${v.y * i}px ${v.blur}px ${v.color}${Math.round(Math.max(30, 200 - i * 28)).toString(16).padStart(2, '0')}`);
-    const css = `font-size: 40px;\nfont-weight: 700;\ncolor: #1b2432;\ntext-shadow: ${arr.join(',\n  ')};`;
-    return { css, demo: `<div style="font-size:40px;font-weight:700;color:#1b2432;text-shadow:${arr.join(',')}">${E(v.text)}</div>` };
+    const css = `font-size: 40px;\nfont-weight: 700;\ncolor: #262218;\ntext-shadow: ${arr.join(',\n  ')};`;
+    return { css, demo: `<div style="font-size:40px;font-weight:700;color:#262218;text-shadow:${arr.join(',')}">${E(v.text)}</div>` };
   }),
   cssbutton: cssTool([
     { id: 'text', label: '按钮文字', type: 'text', default: '立即使用' },
-    { id: 'c1', label: '渐变起色', type: 'color', default: '#2f5bd7' },
+    { id: 'c1', label: '渐变起色', type: 'color', default: '#2a45c4' },
     { id: 'c2', label: '渐变终色', type: 'color', default: '#6b8cf5' },
     { id: 'radius', label: '圆角', type: 'range', min: 0, max: 30, default: 10, unit: 'px' },
     { id: 'pad', label: '内边距', type: 'range', min: 6, max: 28, default: 12, unit: 'px' },
@@ -556,7 +556,7 @@ export const CUSTOM = {
   }),
   svg2png: (root, K) => panel(root, K, {
     title: 'SVG 源码或文件', outTitle: 'PNG', copyLabel: '复制源码',
-    fields: [{ id: 'svg', label: 'SVG 源码', type: 'textarea', rows: 7, default: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><rect width="240" height="120" fill="#eaf1ff"/><text x="120" y="68" text-anchor="middle" font-size="24" fill="#2f5bd7">一页工具</text></svg>' }, { id: 'file', label: '或选 .svg 文件', type: 'file', accept: '.svg,image/svg+xml' }, { id: 'scale', label: '放大倍数', type: 'range', min: 1, max: 4, default: 2 }],
+    fields: [{ id: 'svg', label: 'SVG 源码', type: 'textarea', rows: 7, default: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><rect width="240" height="120" fill="#eaf1ff"/><text x="120" y="68" text-anchor="middle" font-size="24" fill="#2a45c4">一页工具</text></svg>' }, { id: 'file', label: '或选 .svg 文件', type: 'file', accept: '.svg,image/svg+xml' }, { id: 'scale', label: '放大倍数', type: 'range', min: 1, max: 4, default: 2 }],
     actions: [{ label: '下载 PNG', run: (v, c) => c.K.download('svg.png', c.getResult(), 'application/octet-stream') }],
     build: async (v) => {
       let s = String(v.svg).trim();
@@ -592,7 +592,7 @@ export const CUSTOM = {
     title: '代码与样式', outTitle: '分享图', copyLabel: '复制代码',
     fields: [
       { id: 'code', label: '代码', type: 'textarea', rows: 7, default: 'function hello(name) {\n  return `你好，${name}`;\n}\nconsole.log(hello("一页工具"));' },
-      { id: 'bg', label: '背景色', type: 'color', default: '#1b2432' },
+      { id: 'bg', label: '背景色', type: 'color', default: '#262218' },
       { id: 'fg', label: '文字色', type: 'color', default: '#e8eefc' },
       { id: 'size', label: '字号', type: 'range', min: 12, max: 30, default: 17, unit: 'px' },
     ],
@@ -613,7 +613,7 @@ export const CUSTOM = {
   }),
   identicon: (root, K) => panel(root, K, {
     title: '生成设置', outTitle: '头像', copyLabel: '复制说明',
-    fields: [{ id: 'text', label: '输入文本', type: 'text', default: '一页工具' }, { id: 'size', label: '尺寸', type: 'range', min: 96, max: 512, default: 240, unit: 'px' }, { id: 'bg', label: '背景色', type: 'color', default: '#f6f8fb' }],
+    fields: [{ id: 'text', label: '输入文本', type: 'text', default: '一页工具' }, { id: 'size', label: '尺寸', type: 'range', min: 96, max: 512, default: 240, unit: 'px' }, { id: 'bg', label: '背景色', type: 'color', default: '#f4f1e8' }],
     actions: [{ label: '下载 PNG', run: (v, c) => c.K.download('avatar.png', c.getResult(), 'application/octet-stream') }],
     build: (v) => {
       const bytes = L.hash(String(v.text), 'sha256');
@@ -676,11 +676,11 @@ export const CUSTOM = {
   signature: (root, K) => {
     root.innerHTML = `<div class="t-work"><section class="t-panel wide">
       <div class="t-head"><h2><span class="step">1</span>手写签名</h2><span class="hint">鼠标或触屏都能画</span></div>
-      <canvas data-cv width="720" height="260" style="width:100%;height:auto;touch-action:none;background:#fff;border:1px solid #e3e8f0;border-radius:8px;cursor:crosshair"></canvas>
+      <canvas data-cv width="720" height="260" style="width:100%;height:auto;touch-action:none;background:#fff;border:1px solid #e6e2d3;border-radius:8px;cursor:crosshair"></canvas>
       <div class="t-actions"><button type="button" class="t-btn" data-clear>重画</button><button type="button" class="t-btn primary" data-save>下载透明底 PNG</button></div>
       <p class="t-hint">导出的是透明背景 PNG，可直接贴到文档里。</p></section></div>`;
     const cv = $('[data-cv]', root), x = cv.getContext('2d');
-    x.strokeStyle = '#1b2432'; x.lineWidth = 3.2; x.lineCap = 'round'; x.lineJoin = 'round';
+    x.strokeStyle = '#262218'; x.lineWidth = 3.2; x.lineCap = 'round'; x.lineJoin = 'round';
     let drawing = false;
     const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * cv.width, (e.clientY - r.top) / r.height * cv.height]; };
     cv.addEventListener('pointerdown', (e) => { drawing = true; const [a, b] = pos(e); x.beginPath(); x.moveTo(a, b); cv.setPointerCapture(e.pointerId); });
@@ -695,7 +695,7 @@ export const CUSTOM = {
   camrecord: (root, K) => {
     root.innerHTML = `<div class="t-work"><section class="t-panel wide">
       <div class="t-head"><h2><span class="step">1</span>摄像头录像</h2><span class="hint">仅在本机预览与录制</span></div>
-      <video data-v autoplay playsinline muted style="width:100%;max-height:320px;background:#1b2432;border-radius:8px"></video>
+      <video data-v autoplay playsinline muted style="width:100%;max-height:320px;background:#262218;border-radius:8px"></video>
       <div class="t-actions"><button type="button" class="t-btn primary" data-start>开启摄像头</button><button type="button" class="t-btn" data-rec>开始录制</button><button type="button" class="t-btn" data-stop>停止并下载</button></div>
       <p class="t-hint" data-msg>浏览器会先弹出摄像头授权，录像不会上传。</p></section></div>`;
     const video = $('[data-v]', root), msg = $('[data-msg]', root);
@@ -881,7 +881,7 @@ export const CUSTOM = {
         <button type="button" class="t-btn" data-html>查看 HTML</button>
         <button type="button" class="t-btn primary" data-copy>复制 HTML</button>
       </div>
-      <div data-ed contenteditable="true" style="min-height:220px;padding:16px;border:1px solid #e3e8f0;border-radius:8px;background:#fff;line-height:1.8">在这里写点什么，选中文字再点上方的按钮。</div>
+      <div data-ed contenteditable="true" style="min-height:220px;padding:16px;border:1px solid #e6e2d3;border-radius:8px;background:#fff;line-height:1.8">在这里写点什么，选中文字再点上方的按钮。</div>
       <pre data-out class="t-out" style="margin-top:12px;white-space:pre-wrap;display:none"></pre>
       </section></div>`;
     const ed = $('[data-ed]', root), out = $('[data-out]', root);
@@ -916,10 +916,10 @@ export const CUSTOM = {
       if (changed) add(); draw();
     };
     const draw = () => {
-      const cell = (n) => `<div style="width:66px;height:66px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:700 ${n > 999 ? 18 : 24}px var(--mono);background:${n ? ({ 2: '#eef2fb', 4: '#dfe9ff', 8: '#b9d0ff', 16: '#8fb2ff', 32: '#6b94f7', 64: '#4b78e8', 128: '#2f5bd7', 256: '#2549b4', 512: '#1d3b96', 1024: '#162e78', 2048: '#0f225c' }[n] || '#0f225c') : '#f6f8fb'};color:${n > 8 ? '#fff' : '#1b2432'}">${n || ''}</div>`;
+      const cell = (n) => `<div style="width:66px;height:66px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:700 ${n > 999 ? 18 : 24}px var(--mono);background:${n ? ({ 2: '#eef2fb', 4: '#dfe9ff', 8: '#b9d0ff', 16: '#8fb2ff', 32: '#6b94f7', 64: '#4b78e8', 128: '#2a45c4', 256: '#2549b4', 512: '#1d3b96', 1024: '#162e78', 2048: '#0f225c' }[n] || '#0f225c') : '#f4f1e8'};color:${n > 8 ? '#fff' : '#262218'}">${n || ''}</div>`;
       root.innerHTML = `<div class="t-work"><section class="t-panel wide"><div class="t-head"><h2><span class="step">1</span>2048</h2><span class="hint">方向键或下方按钮移动</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>得分 ${score}</b><button type="button" class="t-btn" data-new>重新开始</button></div>
-        <div style="display:grid;grid-template-columns:repeat(4,max-content);gap:8px;justify-content:center;padding:12px;background:#e3e8f0;border-radius:10px">${g.flat().map(cell).join('')}</div>
+        <div style="display:grid;grid-template-columns:repeat(4,max-content);gap:8px;justify-content:center;padding:12px;background:#e6e2d3;border-radius:10px">${g.flat().map(cell).join('')}</div>
         <div class="t-actions" style="justify-content:center;margin-top:14px"><button class="t-btn" data-d="ArrowUp">↑</button><button class="t-btn" data-d="ArrowLeft">←</button><button class="t-btn" data-d="ArrowDown">↓</button><button class="t-btn" data-d="ArrowRight">→</button></div>
         </section></div>`;
     };
@@ -1002,7 +1002,7 @@ export const CUSTOM = {
     const draw = () => {
       const cell = (r, c) => {
         const v = flags[r][c] ? '🚩' : revealed[r][c] ? (g[r][c] === -1 ? '💣' : g[r][c] || '') : '';
-        return `<button type="button" data-r="${r}" data-c="${c}" style="width:34px;height:34px;border:1px solid #d5dce8;border-radius:4px;background:${revealed[r][c] ? '#fff' : '#eaf1ff'};color:${['', '#2f5bd7', '#0e9f6e', '#e0453b', '#8b5cf6'][g[r][c]] || '#1b2432'};font-weight:700;cursor:pointer">${v}</button>`;
+        return `<button type="button" data-r="${r}" data-c="${c}" style="width:34px;height:34px;border:1px solid #d5dce8;border-radius:4px;background:${revealed[r][c] ? '#fff' : '#eaf1ff'};color:${['', '#2a45c4', '#0e9f6e', '#e0453b', '#8b5cf6'][g[r][c]] || '#262218'};font-weight:700;cursor:pointer">${v}</button>`;
       };
       const done = revealed.flat().filter(Boolean).length >= N * N - M;
       root.innerHTML = `<div class="t-work"><section class="t-panel wide"><div class="t-head"><h2><span class="step">1</span>扫雷</h2><span class="hint">左键翻开，右键标旗</span></div>
@@ -1047,9 +1047,9 @@ export const CUSTOM = {
         <canvas data-cv width="${N * S + 2}" height="${N * S + 2}" style="max-width:100%;height:auto;border-radius:8px"></canvas>
         <div class="t-actions" style="justify-content:center"><button class="t-btn" data-d="up">↑</button><button class="t-btn" data-d="left">←</button><button class="t-btn" data-d="down">↓</button><button class="t-btn" data-d="right">→</button><button class="t-btn" data-new>换个迷宫</button></div></section></div>`;
       const cv = $('[data-cv]', root), x = cv.getContext('2d');
-      x.fillStyle = '#f6f8fb'; x.fillRect(0, 0, cv.width, cv.height);
+      x.fillStyle = '#f4f1e8'; x.fillRect(0, 0, cv.width, cv.height);
       x.fillStyle = '#c7ecd9'; x.fillRect(1 + goal[1] * S, 1 + goal[0] * S, S - 2, S - 2);
-      x.strokeStyle = '#1b2432'; x.lineWidth = 2;
+      x.strokeStyle = '#262218'; x.lineWidth = 2;
       for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
         const w = walls[r][c], X = 1 + c * S, Y = 1 + r * S;
         if (w[0]) { x.beginPath(); x.moveTo(X, Y); x.lineTo(X + S, Y); x.stroke(); }
@@ -1057,7 +1057,7 @@ export const CUSTOM = {
         if (w[3]) { x.beginPath(); x.moveTo(X, Y); x.lineTo(X, Y + S); x.stroke(); }
         if (w[1]) { x.beginPath(); x.moveTo(X + S, Y); x.lineTo(X + S, Y + S); x.stroke(); }
       }
-      x.fillStyle = '#2f5bd7'; x.beginPath(); x.arc(1 + pos[1] * S + S / 2, 1 + pos[0] * S + S / 2, S * .3, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#2a45c4'; x.beginPath(); x.arc(1 + pos[1] * S + S / 2, 1 + pos[0] * S + S / 2, S * .3, 0, Math.PI * 2); x.fill();
     }
     const key = (e) => { const m = { ArrowUp: [-1, 0, 0, 2], ArrowDown: [1, 0, 2, 0], ArrowLeft: [0, -1, 3, 1], ArrowRight: [0, 1, 1, 3] }[e.key]; if (m) { e.preventDefault(); move(...m); } };
     document.addEventListener('keydown', key);
@@ -1067,7 +1067,7 @@ export const CUSTOM = {
   },
   dino: (root, K) => {
     root.innerHTML = `<div class="t-work"><section class="t-panel wide"><div class="t-head"><h2><span class="step">1</span>恐龙快跑</h2><span class="hint">空格或点击跳跃</span></div>
-      <canvas data-cv width="640" height="180" style="width:100%;height:auto;background:#fbfcfe;border:1px solid #e3e8f0;border-radius:8px"></canvas>
+      <canvas data-cv width="640" height="180" style="width:100%;height:auto;background:#fbfcfe;border:1px solid #e6e2d3;border-radius:8px"></canvas>
       <p class="t-hint" data-msg>跳过 cactus 得分，撞到就重来。</p></section></div>`;
     const cv = $('[data-cv]', root), x = cv.getContext('2d'), msg = $('[data-msg]', root);
     let y = 0, vy = 0, obs = [], score = 0, dead = false, tick = 0, raf = null;
@@ -1083,12 +1083,12 @@ export const CUSTOM = {
         for (const o of obs) if (o.x < 74 && o.x > 34 && y < o.h) { dead = true; msg.textContent = `撞上了，得分 ${Math.floor(score / 6)}。点一下或按空格重来。`; }
       }
       x.clearRect(0, 0, 640, 180);
-      x.fillStyle = '#e3e8f0'; x.fillRect(0, 150, 640, 2);
-      x.fillStyle = '#2f5bd7'; x.fillRect(40, 150 - y - 30, 26, 30);
+      x.fillStyle = '#e6e2d3'; x.fillRect(0, 150, 640, 2);
+      x.fillStyle = '#2a45c4'; x.fillRect(40, 150 - y - 30, 26, 30);
       x.fillRect(66, 150 - y - 30, 6, 8);
       x.fillStyle = '#0e9f6e';
       for (const o of obs) { x.fillRect(o.x, 150 - o.h, 12, o.h); x.fillRect(o.x - 5, 150 - o.h + 8, 5, 6); }
-      x.fillStyle = '#1b2432'; x.font = '14px var(--mono)'; x.fillText('得分 ' + Math.floor(score / 6), 560, 26);
+      x.fillStyle = '#262218'; x.font = '14px var(--mono)'; x.fillText('得分 ' + Math.floor(score / 6), 560, 26);
       raf = requestAnimationFrame(loop);
     };
     const key = (e) => { if (e.code === 'Space') { e.preventDefault(); jump(); } };
@@ -1139,7 +1139,7 @@ export const CUSTOM = {
     const draw = () => {
       root.innerHTML = `<div class="t-work"><section class="t-panel wide"><div class="t-head"><h2><span class="step">1</span>捏泡泡</h2><span class="hint">点破所有泡泡</span></div>
         <p class="t-hint">已捏破 ${popped} 个，还剩 ${n} 个。<button type="button" class="t-btn" data-new style="margin-left:10px">换一张</button></p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:10px;padding:14px;background:#f6f8fb;border-radius:10px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:10px;padding:14px;background:#f4f1e8;border-radius:10px">
         ${Array.from({ length: n }, (_, i) => `<button type="button" data-b="${i}" style="width:48px;height:48px;border-radius:50%;border:1px solid #b9cdf5;background:radial-gradient(circle at 32% 30%,#fff,#a9c4f7 60%,#6b94e8);cursor:pointer;box-shadow:inset -3px -3px 6px rgba(0,0,0,.08)"></button>`).join('')}
         </div></section></div>`;
     };
@@ -1161,7 +1161,7 @@ export const CUSTOM = {
         const dur = ({ '1 档': 2.4, '2 档': 1.2, '3 档': .45, '关': 0 })[v.speed];
         const spin = dur ? `animation: xfan ${dur}s linear infinite` : '';
         return { code: `当前档位：${v.speed}${dur ? `，每圈 ${dur} 秒` : '，已关闭'}`, copy: v.speed,
-          preview: `<style>@keyframes xfan{to{transform:rotate(360deg)}}</style><div style="display:flex;justify-content:center;padding:10px"><div style="width:150px;height:150px;position:relative;${spin}">${[0, 90, 180, 270].map((a) => `<div style="position:absolute;left:50%;top:50%;width:64px;height:26px;border-radius:50% 50% 40% 40%;background:${E(v.color)};transform-origin:0 50%;transform:rotate(${a}deg) translateY(-13px)"></div>`).join('')}<div style="position:absolute;left:50%;top:50%;width:22px;height:22px;border-radius:50%;background:#e3e8f0;transform:translate(-50%,-50%)"></div></div></div><p style="text-align:center" class="t-hint">没有风，只有画面。</p>` };
+          preview: `<style>@keyframes xfan{to{transform:rotate(360deg)}}</style><div style="display:flex;justify-content:center;padding:10px"><div style="width:150px;height:150px;position:relative;${spin}">${[0, 90, 180, 270].map((a) => `<div style="position:absolute;left:50%;top:50%;width:64px;height:26px;border-radius:50% 50% 40% 40%;background:${E(v.color)};transform-origin:0 50%;transform:rotate(${a}deg) translateY(-13px)"></div>`).join('')}<div style="position:absolute;left:50%;top:50%;width:22px;height:22px;border-radius:50%;background:#e6e2d3;transform:translate(-50%,-50%)"></div></div></div><p style="text-align:center" class="t-hint">没有风，只有画面。</p>` };
       },
     });
   },

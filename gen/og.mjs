@@ -1,18 +1,18 @@
 // 生成社交分享用的 1200×630 PNG（og:image）。
 // 零依赖：直接用 Node 内置 zlib 手写 PNG，不引图像库、不依赖系统字体。
-// 图案按当前工具总数自适应排成方块网格，一个方块对应一个工具；白底 + 单一蓝色系的深浅层次。
+// 图案按当前工具总数自适应排成方块网格，一个方块对应一个工具；白底 + 群青单色系深浅层次。
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import { TOOLS } from '../src/data/catalog.mjs';
 
 const W = 1200, H = 630;
 const BG = [255, 255, 255];
-const HAIR = [233, 237, 244];
-const BLUE = [47, 91, 215];
-const BLUE_MID = [96, 133, 226];
-const BLUE_LIGHT = [160, 187, 240];
-const BLUE_PALE = [211, 224, 250];
-const GREY = [234, 238, 245];
+const HAIR = [233, 229, 216];
+const BLUE = [42, 69, 196];
+const BLUE_MID = [95, 122, 216];
+const BLUE_LIGHT = [160, 180, 238];
+const BLUE_PALE = [214, 223, 248];
+const GREY = [236, 232, 219];
 
 const RAW = Buffer.alloc(H * (1 + W * 3));
 const set = (x, y, c) => {

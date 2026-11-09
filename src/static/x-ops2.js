@@ -466,7 +466,7 @@ function lottery(v, name, groups) {
 const hex2rgb = (s) => {
   let t = String(s).trim().replace(/^#/, '');
   if (/^[0-9a-f]{3}$/i.test(t)) t = [...t].map((c) => c + c).join('');
-  if (!/^[0-9a-f]{6}$/i.test(t)) throw new Error('请填 6 位十六进制色值，例如 #2f5bd7');
+  if (!/^[0-9a-f]{6}$/i.test(t)) throw new Error('请填 6 位十六进制色值，例如 #2a45c4');
   return [parseInt(t.slice(0, 2), 16), parseInt(t.slice(2, 4), 16), parseInt(t.slice(4, 6), 16)];
 };
 const rgb2hex = (r, g, b) => '#' + [r, g, b].map((x) => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0')).join('');
@@ -490,7 +490,7 @@ const rgb2cmyk = ([r, g, b]) => {
     .map((x) => Math.round(x[0]));
 };
 const cmyk2rgb = ([c, m, y, k]) => [c, m, y].map((x) => Math.round(255 * (1 - clamp(x, 0, 100) / 100) * (1 - clamp(k, 0, 100) / 100)));
-const swatch = (color, label = '') => `<div style="width:100%;height:76px;border-radius:8px;border:1px solid #e3e8f0;background:${esc(color)};display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55);font-size:12px">${esc(label)}</div>`;
+const swatch = (color, label = '') => `<div style="width:100%;height:76px;border-radius:8px;border:1px solid #e6e2d3;background:${esc(color)};display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55);font-size:12px">${esc(label)}</div>`;
 const rgbLab = ([r, g, b]) => {
   const f = (x) => { x /= 255; return x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92; };
   const R = f(r), G = f(g), B = f(b);
@@ -499,7 +499,7 @@ const rgbLab = ([r, g, b]) => {
   return [116 * g2(Y) - 16, 500 * (g2(X) - g2(Y)), 200 * (g2(Y) - g2(Z))];
 };
 const colorFields = () => [
-  { id: 'a', label: '颜色 A', type: 'color', default: '#2f5bd7' },
+  { id: 'a', label: '颜色 A', type: 'color', default: '#2a45c4' },
   { id: 'b', label: '颜色 B', type: 'color', default: '#e0453b' },
 ];
 const twoColor = (fn) => ({ fields: colorFields(), run: (v) => fn(hex2rgb(v.a), hex2rgb(v.b), v.a, v.b) });
@@ -512,7 +512,7 @@ const cvt = (la, lb, fields, ab, ba) => ({
     catch (e) { return { error: e.message || String(e) }; }
   },
 });
-const HEXF = txt('hex', 'HEX 色值', '#2f5bd7', '#2f5bd7');
+const HEXF = txt('hex', 'HEX 色值', '#2a45c4', '#2a45c4');
 const RGBF = [num('r', 'R', 47, '0–255'), num('g', 'G', 91, '0–255'), num('b', 'B', 215, '0–255')];
 const HSVF = [num('h', 'H 色相', 222, '0–360'), num('s', 'S 饱和度', 78, '%'), num('vv', 'V 明度', 84, '%')];
 const CMYKF = [num('c', 'C 青', 78, '%'), num('m', 'M 品红', 58, '%'), num('y', 'Y 黄', 0, '%'), num('k', 'K 黑', 16, '%')];

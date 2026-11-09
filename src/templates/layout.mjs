@@ -7,10 +7,11 @@ export { SITE_NAME, SITE_TAGLINE, esc };
 
 const SYMBOLS = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="4"/>
-    <path d="M3 10.5h18M10.5 10.5v10.5"/>
-    <rect x="6" y="6" width="2.6" height="2.6" rx=".6" fill="currentColor" stroke="none"/>
+  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+    <rect x="3.2" y="3.2" width="7.2" height="7.2" rx="1.6"/>
+    <rect x="13.6" y="3.2" width="7.2" height="7.2" rx="1.6"/>
+    <rect x="3.2" y="13.6" width="7.2" height="7.2" rx="1.6"/>
+    <rect x="13.6" y="13.6" width="7.2" height="7.2" rx="1.6" fill="currentColor" stroke="none"/>
   </symbol>
   <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.7"/><path d="M15.8 15.8L21 21"/></symbol>
   <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>

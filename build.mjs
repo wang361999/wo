@@ -129,12 +129,14 @@ fs.writeFileSync(path.join(DIST, '404.html'), `<!DOCTYPE html>
   <span class="brand-txt">${SITE_NAME}<small>${SITE_TAGLINE}</small></span></a>
 </div></header>
 <main class="wrap"><section class="hero">
+  <div class="hero-copy">
   <div class="hero-eyebrow"><span class="eyebrow-dot"></span>404 · 页面不存在</div>
   <h1>这个页面不在这里</h1>
   <p class="hero-lede">链接可能已经失效。回首页看看全部 ${TOOLS.length} 个工具，或者直接用搜索找。</p>
-  <p style="margin-top:26px"><a class="foot-top" href="/">回到首页</a></p>
+  <p style="margin-top:0"><a class="home-cta" href="/">回到首页</a></p>
+  </div>
 </section></main>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 10.5h18M10.5 10.5v10.5"/><rect x="6" y="6" width="2.6" height="2.6" rx=".6" fill="currentColor" stroke="none"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.2" y="3.2" width="7.2" height="7.2" rx="1.6"/><rect x="13.6" y="3.2" width="7.2" height="7.2" rx="1.6"/><rect x="3.2" y="13.6" width="7.2" height="7.2" rx="1.6"/><rect x="13.6" y="13.6" width="7.2" height="7.2" rx="1.6" fill="currentColor" stroke="none"/></symbol></svg>
 </body></html>`);
 
 // sitemap：只写 loc。旧版 287 条 lastmod 全用构建当天，等于每次发版都宣称全站改过，

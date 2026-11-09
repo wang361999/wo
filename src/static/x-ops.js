@@ -929,7 +929,7 @@ export const TEXT = {
     },
   },
   svg2css: {
-    placeholder: 'SVG 源码', sample: { src: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#2f5bd7"/></svg>' },
+    placeholder: 'SVG 源码', sample: { src: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#2a45c4"/></svg>' },
     fields: () => [sel('mode', '编码方式', ['URL 编码', 'Base64'])],
     run: (v) => {
       const s = String(v.src).trim().replace(/\s{2,}/g, ' ').replace(/\n/g, '');
@@ -938,7 +938,7 @@ export const TEXT = {
         ? 'data:image/svg+xml;base64,' + L.bytesToB64(new TextEncoder().encode(s))
         : 'data:image/svg+xml,' + encodeURIComponent(s).replace(/'/g, '%27').replace(/"/g, "'");
       return ok(`background-image: url("${data}");\nbackground-repeat: no-repeat;\nbackground-size: contain;`,
-        { preview: `<div style="width:100%;height:120px;background-color:#f6f8fb;background-position:center;background-image:url('${data.replace(/"/g, '&quot;')}')"></div>` });
+        { preview: `<div style="width:100%;height:120px;background-color:#f4f1e8;background-position:center;background-image:url('${data.replace(/"/g, '&quot;')}')"></div>` });
     },
   },
   htaccess: {

@@ -49,6 +49,14 @@ function quickTiles() {
   }).join('');
 }
 
+/* Hero 右侧的格子装饰：取前几个分类的图标排成错落的小方格，呼应品牌标志。 */
+function heroSide() {
+  return CATS.filter((c) => c.id !== 'all').slice(0, 9).map((c) => {
+    const th = catTheme(c.id);
+    return `<span class="hs-tile" style="--ic:${th.soft}" aria-hidden="true">${esc(c.icon)}</span>`;
+  }).join('');
+}
+
 function categoryTiles() {
   return CATS.filter((c) => c.id !== 'all').map((c) => {
     const th = catTheme(c.id);
@@ -101,15 +109,18 @@ function spec() {
 export function homeHTML() {
   return `
 <section class="hero">
-  <div class="hero-eyebrow"><span class="eyebrow-dot"></span>免费 · 无需注册 · 文件不上传</div>
-  <h1>常用小工具，打开就能用</h1>
-  <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分好，绝大多数在浏览器本地跑，实时数据类经本站接口取数。</p>
-  <div class="hero-search">${svg('i-search')}
-    <input id="q" type="search" placeholder="搜索工具名称或功能" autocomplete="off" aria-label="搜索工具">
-    <kbd class="kbd">/</kbd>
-    <button class="clear hidden" id="qClear" aria-label="清空">×</button>
+  <div class="hero-copy">
+    <div class="hero-eyebrow"><span class="eyebrow-dot"></span>免费 · 无需注册 · 文件不上传</div>
+    <h1>常用小工具，打开就能用</h1>
+    <p class="hero-lede">PDF、图片、文本、计算、CSS 生成器……${TOOLS.length} 个工具按类分好，绝大多数在浏览器本地跑，实时数据类经本站接口取数。</p>
+    <div class="hero-search">${svg('i-search')}
+      <input id="q" type="search" placeholder="搜索工具名称或功能" autocomplete="off" aria-label="搜索工具">
+      <kbd class="kbd">/</kbd>
+      <button class="clear hidden" id="qClear" aria-label="清空">×</button>
+    </div>
+    <div class="hero-tags"><span>大家常找：</span><a href="/tools/pdf-merge/">PDF 合并</a><a href="/tools/qrcode/">二维码</a><a href="/tools/timestamp/">时间戳</a><a href="/tools/mortgage/">房贷计算</a></div>
   </div>
-  <div class="hero-tags"><span>大家常找：</span><a href="/tools/pdf-merge/">PDF 合并</a><a href="/tools/qrcode/">二维码</a><a href="/tools/timestamp/">时间戳</a><a href="/tools/mortgage/">房贷计算</a></div>
+  <div class="hero-side" aria-hidden="true">${heroSide()}</div>
 </section>
 
 <section class="stat-strip" aria-label="站点实时数据">
@@ -123,12 +134,12 @@ export function homeHTML() {
 </section>
 
 <section class="quick" aria-label="常用工具快捷入口">
-  <div class="sec-head"><h2>常用工具</h2><span>点图标直接打开</span></div>
+  <div class="sec-head"><h2><span class="sec-no">01</span>常用工具</h2><span>点图标直接打开</span></div>
   <div class="quick-grid">${quickTiles()}</div>
 </section>
 
 <section class="recent-sec" aria-label="最近使用与收藏">
-  <div class="sec-head"><h2>我的工具</h2><button type="button" class="sync-open" data-sync-open>跨设备同步</button></div>
+  <div class="sec-head"><h2><span class="sec-no">02</span>我的工具</h2><button type="button" class="sync-open" data-sync-open>跨设备同步</button></div>
   <div class="recent-label">我的收藏</div>
   <div class="recent-row" data-fav></div>
   <div class="recent-label">最近用过</div>
@@ -151,7 +162,7 @@ export function homeHTML() {
 
 <section class="rank-sec" id="rank">
   <div class="rank-main">
-    <div class="sec-head"><h2>工具热度榜</h2><span>按真实使用次数排名</span></div>
+    <div class="sec-head"><h2><span class="sec-no">03</span>工具热度榜</h2><span>按真实使用次数排名</span></div>
     <div class="rank-list" data-rank><p class="rank-empty">正在读取真实使用数据…</p></div>
   </div>
   <aside class="rank-side">
@@ -168,12 +179,12 @@ export function homeHTML() {
 </section>
 
 <section class="cat-sec" id="categories" aria-label="工具分类">
-  <div class="sec-head"><h2>按分类找工具</h2><span>${CATS.filter(c=>c.id!=='all').length} 个分类 · ${TOOLS.length} 个工具</span></div>
+  <div class="sec-head"><h2><span class="sec-no">04</span>按分类找工具</h2><span>${CATS.filter(c=>c.id!=='all').length} 个分类 · ${TOOLS.length} 个工具</span></div>
   <div class="cat-grid">${categoryTiles()}</div>
 </section>
 
 <section class="all-sec" id="all" aria-label="全部工具">
-  <div class="sec-head"><h2>全部工具</h2><span id="resultLabel"><b>共 ${TOOLS.length} 个</b></span></div>
+  <div class="sec-head"><h2><span class="sec-no">05</span>全部工具</h2><span id="resultLabel"><b>共 ${TOOLS.length} 个</b></span></div>
   <section class="filters" aria-label="筛选工具">
     <div class="filter-row"><span class="filter-label">适用设备</span>
       <div class="filter-main">${devSeg()}<p class="dev-cap" id="devCap">标「两端」的工具在电脑和手机上都能用。</p></div>
