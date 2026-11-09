@@ -1,0 +1,30 @@
+name: 友链回链每日复核
+
+# 每天触发一次本站的复核接口：检查已上线友链的首页是否还有本站链接，
+# 连续 3 次查不到就自动下架。接口本身有 2 分钟互斥锁和每条 20 小时冷却，
+# 重复触发不会重复抓对方网站。
+on:
+  schedule:
+    - cron: '17 2 * * *'   # UTC 02:17（北京时间 10:17），避开整点高峰
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 触发本站复核接口
+        env:
+          SITE_URL: https://www.gitd.cn
+          # 可选：若项目配置了 CRON_SECRET，在仓库 Settings → Secrets 里加同名变量
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          args=(-fsS --max-time 40
+                -H 'User-Agent: vercel-cron/1.0'
+                -H 'x-vercel-cron-schedule: 0 2 * * *')
+          if [ -n "$CRON_SECRET" ]; then
+            args+=(-H "Authorization: Bearer $CRON_SECRET")
+          fi
+          curl "${args[@]}" "$SITE_URL/api/links-verify"

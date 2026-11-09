@@ -48,7 +48,8 @@ api/net.js                IP / 域名查询：CDN 边缘地理头 + 公开 IP �
 api/fx.js                 实时汇率：公开牌价 + 6 小时缓存 + 每日快照序列
 api/sync.js               跨设备同步：同步码存收藏 / 最近使用，只存工具 id
 api/links.js              友情链接：提交申请、抓对方首页验回链、自动上线 / 每日复核 / 撤链自动下架
-api/links-verify.js       Vercel Cron 的薄入口，转发到 /api/links?job=verify
+api/links-verify.js       每日复核的薄入口，转发到 /api/links?job=verify
+.github/workflows/        每日定时触发复核接口的 GitHub Actions 工作流
 src/static/stats.js       匿名统计前端：上报、心跳、实时数据 / 热度榜渲染、本地清单
 src/static/sync.js        跨设备同步前端：生成 / 连接同步码、上传 / 拉取、收藏按钮
 src/static/links.js       友链前端：渲染已通过的友链、提交申请、复制回链代码、惰性触发复核
@@ -147,7 +148,7 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 |---|---|
 | 提交 | 页脚「申请友链」填站名 / 首页地址 / 简介，`POST /api/links` 立刻抓对方首页核验 |
 | 自动通过 | 首页 HTML 里有一条**可见**的、指向 `www.gitd.cn`（或 `gitd.cn`）的 `<a>` → 立即上线，前端马上把卡片插进列表 |
-| 自动复核 | `vercel.json` 的 Cron 每天 UTC 02:00（北京时间 10 点左右）触发 `/api/links-verify` → `/api/links?job=verify` |
+| 自动复核 | `.github/workflows/links-verify.yml` 每天 UTC 02:17（北京时间 10:17）触发 `/api/links-verify` → `/api/links?job=verify` |
 | 自动删除 | 连续 **3 次**复核查不到回链 → 从 Redis 删除，页面上同步消失 |
 | 待审重试 | 没加回链的申请留 30 天，期间每天自动复查；加好后也可以再提交一次立刻通过 |
 | 可追溯 | `GET /api/links?view=audit` 返回最近 40 条上线 / 警告 / 移除 / 过期记录 |
@@ -156,18 +157,20 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 
 **为什么是 3 次而不是 1 次**：对方改版、临时 5xx、DNS 抖动都会让单次检测失败，立刻删容易误伤。连续 3 轮都查不到才判定为撤链；网络超时和 5xx 单独标记为临时故障，不累加失败次数，只等下一轮再查。
 
-定时任务是 Hobby 免费计划允许的**每天一次**（`0 2 * * *`，实际触发时间会落在这一小时内）。一轮最多并发复核 12 条，超出的由站点页面以 30 分钟节流的方式惰性触发分批补齐；服务端有 2 分钟互斥锁和每条 20 小时冷却，多开页面也不会重复抓对方网站。
+定时任务用仓库自带的 GitHub Actions（每天一次，也支持在 Actions 页手动 `Run workflow` 立即复核），好处是运行记录和失败原因直接可见，不依赖平台侧的定时任务配置；工作流只发一个 GET，不接触数据库凭据。若以后想在 Vercel 侧也加 Cron，把 `crons: [{ "path": "/api/links-verify", "schedule": "0 2 * * *" }]` 加回 `vercel.json` 即可，接口本身兼容两种触发方式。
+
+一轮最多并发复核 12 条，超出的由站点页面以 30 分钟节流的方式惰性触发分批补齐；服务端有 2 分钟互斥锁和每条 20 小时冷却，多开页面也不会重复抓对方网站。
 
 安全与边界：
 
 - 抓对方首页前做域名白名单校验，并**逐跳手动跟随重定向**、每跳重新校验，挡住用 301 把请求引到 `169.254.169.254` 这类内网地址；IP、私有网段、非标准端口、本站自身一律拒绝。
 - 写操作要求同源，按 IP（8 次/小时）与全站（40 次/天）双重限流；同一域名只留一条记录，已上线的站 20 小时内重复提交直接复用结果，不当免费网页探测器；站名 / 简介做粗粒度敏感词过滤；最多 60 条。
-- 不配任何环境变量就能跑：Cron 请求靠 Vercel 固定的 `vercel-cron/1.0` UA 与 `x-vercel-cron-schedule` 头识别。要更严可以在项目设置里加 `CRON_SECRET`，Vercel 会自动带上 `Authorization: Bearer …`，接口随即强制校验。
+- 不配任何环境变量就能跑：定时任务带 `vercel-cron/1.0` UA 与 `x-vercel-cron-schedule` 头，本站页面的惰性复核走同源校验。要更严可以加 `CRON_SECRET`：Vercel Cron 会自动带上 `Authorization: Bearer …`，GitHub Actions 则在仓库 Secrets 里配同名变量，接口随即强制校验。
 - 抓不到也要如实说：只解析静态 HTML、不执行 JS，SPA 站点或屏蔽境外 IP / 自定义 UA 的站点可能一直检测不到；自动审核只能判断「有没有回链」，判断不了对方内容质量。
 
 ## 部署（Vercel）
 
-`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null` 和一条每日 Cron，导入仓库即可，无需手填构建命令。`api/` 下的 6 个文件会各自发布成 Vercel Function（`stats` / `net` / `fx` / `sync` / `links` / `links-verify`），共享代码在 `server/store.mjs`——故意放在 `api/` 目录外，避免被当成一个可访问的路由。数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填；`CRON_SECRET` 是可选的加固项，不配也能跑。
+`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null`，导入仓库即可，无需手填构建命令。每日复核由 `.github/workflows/links-verify.yml` 触发，不需要额外平台配置。`api/` 下的 6 个文件会各自发布成 Vercel Function（`stats` / `net` / `fx` / `sync` / `links` / `links-verify`），共享代码在 `server/store.mjs`——故意放在 `api/` 目录外，避免被当成一个可访问的路由。数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填；`CRON_SECRET` 是可选的加固项，不配也能跑。
 
 发版前建议跑 `npm run check`：它会先用内存版 Redis、假上游和假对方首页把 6 个接口完整跑一遍（65 项断言，含回链检测与撤链自动下架），再构建并跑 SEO 体检。接口测试不需要网络、不需要凭据，也不会碰线上数据。
 

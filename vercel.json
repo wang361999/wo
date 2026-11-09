@@ -3,9 +3,6 @@
   "framework": null,
   "buildCommand": "node build.mjs",
   "outputDirectory": "dist",
-  "crons": [
-    { "path": "/api/links-verify", "schedule": "0 2 * * *" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
