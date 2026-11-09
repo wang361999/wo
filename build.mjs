@@ -174,4 +174,23 @@ if (!check.ok) {
   console.error(`\n✗ SEO 体检未通过（${check.errors.length} 项），构建判定为失败\n`);
   process.exit(1);
 }
-console.log(`  SEO 体检 ✓ ${check.stats.pages} 页 · 唯一 title ${check.stats.uniqueTitles} · 唯一 description ${check.stats.uniqueDescriptions} · 内链 ${check.stats.internalLinks} · 孤岛页 ${check.stats.orphanTools}\n`);
+console.log(`  SEO 体检 ✓ ${check.stats.pages} 页 · 唯一 title ${check.stats.uniqueTitles} · 唯一 description ${check.stats.uniqueDescriptions} · 内链 ${check.stats.internalLinks} · 孤岛页 ${check.stats.orphanTools}`);
+
+/* 本地 canonical 是 localhost，seo-check 会跳过「占位域名」检查（localhost 在本地是合法的），
+   于是「页面里写了 example.com / xxx.vercel.app」这类问题本地全绿、上了 Vercel 才 297 页全红。
+   这里用生产视角补扫这两个永远不该出现的字符串，把问题挡在本地构建阶段。 */
+const placeholders = [];
+(function walk(d) {
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) walk(p);
+    else if (e.name.endsWith('.html') && /example\.com|xxx\.vercel\.app/.test(fs.readFileSync(p, 'utf8'))) {
+      placeholders.push(path.relative(DIST, p));
+    }
+  }
+})(DIST);
+if (placeholders.length) {
+  console.error(`\n✗ ${placeholders.length} 个页面残留占位域名（生产构建会失败）: ${placeholders.slice(0, 8).join(', ')}`);
+  process.exit(1);
+}
+console.log('  生产域名视角占位扫描 ✓\n');

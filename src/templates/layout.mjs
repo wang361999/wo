@@ -111,7 +111,7 @@ ${SYMBOLS}
       </div>
       <form class="friend-form" data-links-form novalidate>
         <label>站点名称<input type="text" name="name" maxlength="24" required placeholder="例：某某工具箱"></label>
-        <label>首页地址<input type="url" name="url" maxlength="200" required placeholder="https://example.com/"></label>
+        <label>首页地址<input type="url" name="url" maxlength="200" required placeholder="https://your-site.com/"></label>
         <label>一句话简介（选填）<input type="text" name="desc" maxlength="60" placeholder="这个站点是做什么的"></label>
         <button type="submit" class="friend-submit">提交并检测</button>
       </form>

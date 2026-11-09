@@ -148,7 +148,7 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 |---|---|
 | 提交 | 页脚「申请友链」填站名 / 首页地址 / 简介，`POST /api/links` 立刻抓对方首页核验 |
 | 自动通过 | 首页 HTML 里有一条**可见**的、指向 `www.gitd.cn`（或 `gitd.cn`）的 `<a>` → 立即上线，前端马上把卡片插进列表 |
-| 自动复核 | `.github/workflows/links-verify.yml` 每天 UTC 02:17（北京时间 10:17）触发 `/api/links-verify` → `/api/links?job=verify` |
+| 自动复核 | `vercel.json` 的 Cron 每天 UTC 02:00 触发 `/api/links-verify` → `/api/links?job=verify`；GitHub Actions 每天 UTC 02:17 再兜一次，也可手动重跑 |
 | 自动删除 | 连续 **3 次**复核查不到回链 → 从 Redis 删除，页面上同步消失 |
 | 待审重试 | 没加回链的申请留 30 天，期间每天自动复查；加好后也可以再提交一次立刻通过 |
 | 可追溯 | `GET /api/links?view=audit` 返回最近 40 条上线 / 警告 / 移除 / 过期记录 |
@@ -157,7 +157,7 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 
 **为什么是 3 次而不是 1 次**：对方改版、临时 5xx、DNS 抖动都会让单次检测失败，立刻删容易误伤。连续 3 轮都查不到才判定为撤链；网络超时和 5xx 单独标记为临时故障，不累加失败次数，只等下一轮再查。
 
-定时任务用仓库自带的 GitHub Actions（每天一次，也支持在 Actions 页手动 `Run workflow` 立即复核），好处是运行记录和失败原因直接可见，不依赖平台侧的定时任务配置；工作流只发一个 GET，不接触数据库凭据。若以后想在 Vercel 侧也加 Cron，把 `crons: [{ "path": "/api/links-verify", "schedule": "0 2 * * *" }]` 加回 `vercel.json` 即可，接口本身兼容两种触发方式。
+定时任务是**双保险**：`vercel.json` 里的平台 Cron 每天 UTC 02:00 触发（Hobby 免费层允许每天一次），`.github/workflows/links-verify.yml` 每天 UTC 02:17 再发一次 GET，并且能在 Actions 页手动 `Run workflow` 立即复核——运行记录和失败原因直接可见。两条路都只打 `/api/links-verify`，不接触数据库凭据；接口有 20 小时冷却，重复触发不会重复抓对方网站。
 
 一轮最多并发复核 12 条，超出的由站点页面以 30 分钟节流的方式惰性触发分批补齐；服务端有 2 分钟互斥锁和每条 20 小时冷却，多开页面也不会重复抓对方网站。
 
@@ -170,9 +170,11 @@ scripts/api-selftest.mjs  6 个同源接口的离线回归测试（内存 Redis 
 
 ## 部署（Vercel）
 
-`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null`，导入仓库即可，无需手填构建命令。每日复核由 `.github/workflows/links-verify.yml` 触发，不需要额外平台配置。`api/` 下的 6 个文件会各自发布成 Vercel Function（`stats` / `net` / `fx` / `sync` / `links` / `links-verify`），共享代码在 `server/store.mjs`——故意放在 `api/` 目录外，避免被当成一个可访问的路由。数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填；`CRON_SECRET` 是可选的加固项，不配也能跑。
+`vercel.json` 已配好 `buildCommand: node build.mjs`、`outputDirectory: dist`、`framework: null` 和一条每日 Cron，导入仓库即可，无需手填构建命令。每日复核由平台 Cron 与 `.github/workflows/links-verify.yml` 双触发，不需要额外配置。`api/` 下的 6 个文件会各自发布成 Vercel Function（`stats` / `net` / `fx` / `sync` / `links` / `links-verify`），共享代码在 `server/store.mjs`——故意放在 `api/` 目录外，避免被当成一个可访问的路由。数据库在 Dashboard → Storage 创建并 Connect 到项目即可，环境变量由集成自动注入，不需要手动填；`CRON_SECRET` 是可选的加固项，不配也能跑。
 
 发版前建议跑 `npm run check`：它会先用内存版 Redis、假上游和假对方首页把 6 个接口完整跑一遍（65 项断言，含回链检测与撤链自动下架），再构建并跑 SEO 体检。接口测试不需要网络、不需要凭据，也不会碰线上数据。
+
+`build.mjs` 末尾还有一道「生产域名视角」补扫：本地 canonical 是 localhost，SEO 体检会跳过占位域名检查，页面里写了 `example.com` / `xxx.vercel.app` 时本地全绿、上了 Vercel 才 297 页全红。补扫把这类问题直接挡在本地构建阶段；要完整复现生产构建，可跑 `SITE_URL=https://www.gitd.cn node build.mjs`。
 
 正式域名写在 `build.mjs` 顶部的 `PRODUCTION_SITE_URL`，当前是 `https://www.gitd.cn`。根域 `gitd.cn` 在 Vercel 上 308 跳到 `www.gitd.cn`，所以全站 canonical、`og:url`、sitemap、robots 与 JSON-LD 统一用 www 这一套，不产生重复 URL。Vercel 构建直接读这个常量，**不需要在 Dashboard 配环境变量**；本地构建默认 `http://localhost:3000`，也可用 `SITE_URL=... node build.mjs` 覆盖。换域名时改常量或设 `SITE_URL`。
 
